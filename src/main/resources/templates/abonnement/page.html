@@ -1,0 +1,100 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'abonnement')}">
+<head><title th:text="#{nav.subscription} + ' - MedSol'">Abonnement - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.subscription}">Abonnement</h1>
+      <p class="sous-titre" th:text="${etat.formuleNom}">MedSol Cabinet</p>
+    </div>
+    <span class="pastille role" th:classappend="${etat.lectureSeule()} ? 'urgent' : (${etat.essai()} ? 'ambre' : 'vert')"
+          th:text="${etat.suspendu()} ? #{sub.state.suspended} : (${etat.expire()} ? #{sub.state.expired} : (${etat.essai()} ? #{sub.state.trial} : #{sub.state.active}))">Essai</span>
+  </header>
+
+  <p th:if="${param.merci}" class="alerte succes" role="status" th:text="#{sub.thanks}">Merci : votre paiement est en cours de confirmation.</p>
+  <p th:if="${param.lecture}" class="alerte erreur" role="alert" th:text="#{sub.readonly}">Votre abonnement est échu.</p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <div class="compteurs">
+    <div class="carte compteur" th:classappend="${etat.lectureSeule()} ? 'accent' : 'vert'">
+      <span class="compteur-valeur" th:text="${#temporals.format(etat.fin, 'dd/MM/yyyy')}">01/01/2027</span>
+      <span class="compteur-libelle" th:text="${etat.expire()} ? #{sub.expiredSince} : #{sub.validUntil}">Valable jusqu'au</span>
+    </div>
+    <div class="carte compteur" th:unless="${etat.expire()}">
+      <span class="compteur-valeur" th:text="${etat.joursRestants}">30</span>
+      <span class="compteur-libelle" th:text="#{sub.daysLeft}">Jours restants</span>
+    </div>
+    <div class="carte compteur violet">
+      <span class="compteur-valeur" th:text="${@monnaie.format(prix.mensuel, prix.devise)}">390 DH</span>
+      <span class="compteur-libelle" th:text="#{sub.perMonth}">Par mois</span>
+    </div>
+    <div class="carte compteur violet">
+      <span class="compteur-valeur" th:text="${@monnaie.format(prix.annuel, prix.devise)}">3 900 DH</span>
+      <span class="compteur-libelle" th:text="#{sub.perYear}">Par an</span>
+    </div>
+  </div>
+
+  <p th:if="${prix.fondateur}" class="alerte succes" role="status" th:text="#{founder.yours}">Tarif fondateur garanti à vie.</p>
+
+  <!-- Parrainage : chaque confrère abonné grâce à vous = 1 mois offert pour vous et pour lui -->
+  <div class="carte parrainage" th:if="${isDoctor}">
+    <div>
+      <h2 th:text="#{ref.title}">Parrainez un confrère</h2>
+      <p th:text="#{ref.text}">Pour chaque confrère qui s'abonne grâce à votre lien, vous recevez 1 mois offert, et lui aussi.</p>
+      <div class="lien-parrainage">
+        <input type="text" readonly th:value="${lienParrainage}" id="lien-parrainage" th:attr="aria-label=#{ref.link}">
+        <button type="button" class="bouton" data-copier="lien-parrainage" th:attr="data-copie=#{ref.copied}" th:text="#{ref.copy}">Copier</button>
+        <a class="bouton principal" th:href="${whatsappParrainage}" target="_blank" rel="noopener" th:text="#{ref.whatsapp.button}">Envoyer par WhatsApp</a>
+      </div>
+    </div>
+    <div th:unless="${#lists.isEmpty(filleuls)}">
+      <h3 th:text="#{ref.list}">Vos confrères inscrits</h3>
+      <ul class="liste-filleuls">
+        <li th:each="f : ${filleuls}">
+          <span th:text="${f.nom}">Cabinet</span>
+          <span class="pastille" th:classappend="${f.recompense} ? 'vert' : 'ambre'"
+                th:text="${f.recompense} ? #{ref.rewarded} : #{ref.pending}">en essai</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grille-2">
+    <div class="carte">
+      <h2 th:text="#{sub.renew}">Renouveler</h2>
+      <th:block th:if="${stripe and isDoctor}">
+        <p th:text="#{sub.card}">Paiement sécurisé par carte bancaire (Stripe).</p>
+        <span class="boutons-entete">
+          <form th:action="@{/abonnement/payer}" method="post"><input type="hidden" name="periode" value="MENSUEL">
+            <button type="submit" class="bouton principal" th:text="#{sub.payMonth(${@monnaie.format(prix.mensuel, prix.devise)})}">Payer</button></form>
+          <form th:action="@{/abonnement/payer}" method="post"><input type="hidden" name="periode" value="ANNUEL">
+            <button type="submit" class="bouton" th:text="#{sub.payYear(${@monnaie.format(prix.annuel, prix.devise)})}">Payer</button></form>
+        </span>
+      </th:block>
+      <h3 th:text="#{sub.offline}">Virement, mobile money ou espèces</h3>
+      <p th:if="${!#strings.isEmpty(instructions)}" class="pre" th:text="${instructions}">Coordonnées</p>
+      <p th:if="${#strings.isEmpty(instructions)}" th:text="#{sub.contact}">Contactez MedSol.</p>
+    </div>
+    <div class="carte">
+      <h2 th:text="#{sub.payments}">Paiements</h2>
+      <p class="vide" th:if="${#lists.isEmpty(paiements)}" th:text="#{sub.payments.none}">Aucun paiement pour le moment.</p>
+      <table class="tableau compact" th:unless="${#lists.isEmpty(paiements)}">
+        <thead><tr><th th:text="#{appointment.date}">Date</th><th th:text="#{sub.period}">Période</th><th th:text="#{cash.mode}">Mode</th><th class="droite" th:text="#{dos.pay.amount}">Montant</th><th th:if="${isDoctor}"></th></tr></thead>
+        <tbody>
+          <tr th:each="p : ${paiements}">
+            <td class="heure" th:text="${#temporals.format(p.le.atZone(cab.zone), 'dd/MM/yyyy')}">date</td>
+            <td th:text="${#temporals.format(p.du, 'dd/MM/yy')} + ' → ' + ${#temporals.format(p.au, 'dd/MM/yy')}">période</td>
+            <td th:text="${p.mode == 'STRIPE'} ? #{sub.mode.stripe} : #{sub.mode.manual}">mode</td>
+            <td class="droite" th:text="${@monnaie.format(p.montant, p.devise)}">390 DH</td>
+            <td th:if="${isDoctor}"><a th:if="${p.numero != null}" class="bouton petit" target="_blank"
+                   th:href="@{/abonnement/paiements/{id}/facture(id=${p.id})}" th:text="#{sub.invoice}">Facture</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

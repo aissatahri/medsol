@@ -1,0 +1,229 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" th:fragment="layout(title, content, active)">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:replace="${title}">MedSol</title>
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"defaultSwapStyle":"outerHTML"}'>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <!-- Installable sur le téléphone (écran d'accueil) -->
+  <link rel="manifest" th:href="@{/img/manifest.json(v=2)}">
+  <link rel="apple-touch-icon" th:href="@{/img/icone-180.png(v=2)}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <script th:src="@{/js/htmx.min.js}" defer></script>
+  <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+<!-- Mise en page de SGCM-Cardio Web : menu rangé comme le bureau (Menu principal, Gestion, Configuration).
+     Seules les entrées propres à un rôle changent : salle d'attente pour l'assistante, paramètres pour le médecin. -->
+<div class="app">
+  <nav class="menu" th:attr="aria-label=#{nav.main}">
+    <a class="marque" th:href="@{/}">
+      <span class="marque-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+      </span>
+      <span class="marque-texte">MedSol<small th:text="${specialiteLibelle}">Cabinet médical</small></span>
+    </a>
+
+    <!-- Administrateur de MedSol : seulement l'espace Plateforme (son cabinet interne n'a ni patients ni rendez-vous) -->
+    <th:block th:unless="${isPlateforme}">
+    <p class="menu-section" th:text="#{nav.section.main}">Menu principal</p>
+    <a th:href="@{/}" class="menu-lien" th:classappend="${active == 'home'} ? 'actif'" th:title="#{nav.home}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/></svg>
+      <span th:text="#{nav.home}">Tableau de bord</span>
+    </a>
+    <a th:href="@{/patients}" class="menu-lien" th:classappend="${active == 'patients'} ? 'actif'" th:title="#{nav.patients}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z"/></svg>
+      <span th:text="#{nav.patients}">Patients</span>
+    </a>
+
+    <p class="menu-section" th:text="#{nav.section.manage}">Gestion</p>
+    <a th:href="@{/planning}" class="menu-lien" th:classappend="${active == 'appointments'} ? 'actif'" th:title="#{nav.appointments}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3zM5 9v10h14V9zm2 2h4v4H7z"/></svg>
+      <span th:text="#{nav.appointments}">Rendez-vous</span>
+      <span class="chat-badge menu-pastille" th:if="${demandesEnLigne > 0}" th:text="${demandesEnLigne}" th:title="#{res.admin.title}">1</span>
+    </a>
+    <!-- Le médecin suit la liste d'attente depuis le tableau de bord ; la salle est gérée par l'assistante -->
+    <a th:unless="${isDoctor}" th:href="@{/queue}" class="menu-lien" th:classappend="${active == 'queue'} ? 'actif'" th:title="#{nav.queue}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm10 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM5 9h4v6H8v6H6v-6H5zm10 0h4v6h-1v6h-2v-6h-1z"/></svg>
+      <span th:text="#{nav.queue}">Salle d'attente</span>
+    </a>
+
+    <!-- Historique des consultations (médecin) : recherche par patient, motif, diagnostic, médicament, période -->
+    <a th:if="${isDoctor}" th:href="@{/consultations}" class="menu-lien" th:classappend="${active == 'consultations'} ? 'actif'" th:title="#{dos.consultations}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.500V8h4.500zM11 11v2H9v2h2v2h2v-2h2v-2h-2v-2z"/></svg>
+      <span th:text="#{dos.consultations}">Consultations</span>
+    </a>
+    <a th:if="${me != null and me.peut('CAISSE')}" th:href="@{/caisse}" class="menu-lien" th:classappend="${active == 'caisse'} ? 'actif'" th:title="#{nav.cash}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM5 8v2a2 2 0 0 0 2-2zm12 0a2 2 0 0 0 2 2V8zM5 14v2h2a2 2 0 0 0-2-2zm14 0a2 2 0 0 0-2 2h2z"/></svg>
+      <span th:text="#{nav.cash}">Caisse</span>
+    </a>
+
+    <th:block th:if="${isDoctor}">
+      <p class="menu-section" th:text="#{nav.section.config}">Configuration</p>
+      <a th:href="@{/statistiques}" class="menu-lien" th:classappend="${active == 'statistiques'} ? 'actif'" th:title="#{nav.stats}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16v2H2V2h2zm3-3V9h3v8zm5 0V5h3v12zm5 0v-5h3v5z"/></svg>
+        <span th:text="#{nav.stats}">Statistiques</span>
+      </a>
+      <a th:href="@{/settings/cabinet}" class="menu-lien" th:classappend="${active == 'settings'} ? 'actif'" th:title="#{nav.settings}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+        <span th:text="#{nav.settings}">Paramètres</span>
+      </a>
+      <a th:href="@{/abonnement}" class="menu-lien" th:classappend="${active == 'abonnement'} ? 'actif'" th:title="#{nav.subscription}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6 6 .9-4.5 4.300 1 6.300L12 16.500 6.500 19.500l1-6.300L3 8.900 9 8z"/></svg>
+        <span th:text="#{nav.subscription}">Abonnement</span>
+      </a>
+    </th:block>
+    </th:block>
+    <th:block th:if="${isPlateforme}">
+      <p class="menu-section">MedSol</p>
+      <a th:href="@{/plateforme}" class="menu-lien" th:classappend="${active == 'plateforme'} ? 'actif'" th:title="#{nav.platform}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>
+        <span th:text="#{nav.platform}">Plateforme</span>
+      </a>
+    </th:block>
+
+    <div class="menu-bas">
+      <a class="compte" th:if="${me != null}" th:href="@{/compte}" th:title="#{account.title}" th:classappend="${active == 'compte'} ? 'actif'">
+        <span class="compte-avatar" aria-hidden="true" th:text="${#strings.substring(me.fullName, 0, 1).toUpperCase()}">D</span>
+        <span class="compte-texte">
+          <span class="compte-nom" th:text="${me.fullName}">Dr</span>
+          <span class="compte-role" th:text="${isPlateforme} ? #{platform.role} : #{'users.role.' + ${me.role}}">Rôle</span>
+        </span>
+      </a>
+      <span class="langues">
+        <a th:href="@{/lang(code='fr')}" th:text="#{lang.fr}">Français</a> · <a th:href="@{/lang(code='en')}" th:text="#{lang.en}">English</a> · <a th:href="@{/lang(code='es')}" th:text="#{lang.es}">Español</a>
+      </span>
+      <form th:action="@{/logout}" method="post">
+        <button type="submit" class="bouton-discret deconnexion" th:attr="aria-label=#{logout}" th:title="#{logout}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5v-2H6V6h4zm6.6 3.4L15.2 8.8 17.4 11H9v2h8.4l-2.2 2.2 1.4 1.4L21.2 12z"/></svg>
+          <span th:text="#{logout}">Déconnexion</span>
+        </button>
+      </form>
+    </div>
+  </nav>
+  <div class="zone">
+    <!-- Barre du haut : replie le menu, recherche de patient sur toutes les pages (« / » ou Ctrl+K) -->
+    <header class="barre-haut">
+      <button type="button" class="hamburger" data-menu-bascule th:attr="aria-label=#{nav.toggle}" aria-expanded="true" th:title="#{nav.toggle}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+      </button>
+      <strong class="barre-cabinet" th:text="${isPlateforme} ? 'MedSol — ' + #{nav.platform} : ${cab?.nom}">Cabinet</strong>
+      <form th:unless="${isPlateforme}" class="recherche-globale" role="search" th:action="@{/patients}" method="get">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+        <input type="search" name="q" id="recherche-globale" th:placeholder="#{nav.search}" autocomplete="off"
+               th:attr="aria-label=#{nav.search}" aria-controls="resultats-globaux"
+               th:hx-get="@{/recherche}" hx-trigger="input changed delay:250ms, search" hx-target="#resultats-globaux" hx-swap="outerHTML">
+        <kbd aria-hidden="true">/</kbd>
+        <div id="resultats-globaux" class="resultats-globaux"></div>
+      </form>
+    </header>
+    <!-- Abonnement : derniers jours, ou lecture seule une fois échu / suspendu -->
+    <div class="bandeau-abonnement" th:if="${abonnement != null and abonnement.alerte()}" th:classappend="${abonnement.lectureSeule()} ? 'echu'" role="status">
+      <span th:if="${abonnement.lectureSeule()}" th:text="#{subscription.readonly}">Abonnement échu : lecture seule.</span>
+      <span th:unless="${abonnement.lectureSeule()}" th:text="#{subscription.ending(${abonnement.joursRestants})}">Fin dans 3 jours.</span>
+      <a th:href="@{/abonnement}" th:text="#{subscription.renew}">Renouveler</a>
+    </div>
+    <!-- Double authentification recommandée au médecin (tableau de bord seulement) -->
+    <div class="bandeau-abonnement conseil" th:if="${active == 'home' and isDoctor and !me.totp}" role="status">
+      <span th:text="#{account.2fa.advice}">Protégez le dossier de vos patients : activez la double authentification.</span>
+      <a th:href="@{/compte#deux-facteurs}" th:text="#{account.2fa.enable}">Activer</a>
+    </div>
+    <main th:replace="${content}" class="contenu">Contenu</main>
+  </div>
+  <!-- Téléphone : voile derrière le menu ouvert, et barre du bas avec les 5 écrans les plus utilisés (icône + texte) -->
+  <div class="voile-menu" data-menu-fermer></div>
+  <nav class="barre-mobile" th:if="${me != null and !isPlateforme}" th:attr="aria-label=#{nav.quick}">
+    <a th:href="@{/}" th:classappend="${active == 'home'} ? 'actif'" th:attr="aria-current=${active == 'home'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/></svg>
+      <span th:text="#{nav.short.home}">Accueil</span></a>
+    <a th:href="@{/patients}" th:classappend="${active == 'patients'} ? 'actif'" th:attr="aria-current=${active == 'patients'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z"/></svg>
+      <span th:text="#{nav.patients}">Patients</span></a>
+    <a th:unless="${isDoctor}" th:href="@{/queue}" th:classappend="${active == 'queue'} ? 'actif'" th:attr="aria-current=${active == 'queue'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm10 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM5 9h4v6H8v6H6v-6H5zm10 0h4v6h-1v6h-2v-6h-1z"/></svg>
+      <span th:text="#{nav.short.queue}">Attente</span></a>
+    <a th:href="@{/planning}" th:classappend="${active == 'appointments'} ? 'actif'" th:attr="aria-current=${active == 'appointments'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3zM5 9v10h14V9zm2 2h4v4H7z"/></svg>
+      <span th:text="#{nav.short.planning}">Planning</span>
+      <i class="pastille-mobile" th:if="${demandesEnLigne > 0}" th:text="${demandesEnLigne}">1</i></a>
+    <a th:if="${isDoctor}" th:href="@{/consultations}" th:classappend="${active == 'consultations'} ? 'actif'" th:attr="aria-current=${active == 'consultations'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.500V8h4.500zM11 11v2H9v2h2v2h2v-2h2v-2h-2v-2z"/></svg>
+      <span th:text="#{dos.consultations}">Consultations</span></a>
+    <a th:if="${me.peut('CAISSE')}" th:href="@{/caisse}" th:classappend="${active == 'caisse'} ? 'actif'" th:attr="aria-current=${active == 'caisse'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm9 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM5 8v2a2 2 0 0 0 2-2zm12 0a2 2 0 0 0 2 2V8zM5 14v2h2a2 2 0 0 0-2-2zm14 0a2 2 0 0 0-2 2h2z"/></svg>
+      <span th:text="#{nav.cash}">Caisse</span></a>
+    <a th:unless="${me.peut('CAISSE')}" th:href="@{/compte}" th:classappend="${active == 'compte'} ? 'actif'" th:attr="aria-current=${active == 'compte'} ? 'page' : null">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.300 0-8 1.700-8 5v2h16v-2c0-3.300-4.700-5-8-5z"/></svg>
+      <span th:text="#{account.title}">Mon compte</span></a>
+  </nav>
+
+  <!-- Messagerie du cabinet : bulle en bas à droite, entre le médecin et l'assistante. Le script (app.js) interroge le
+       serveur toutes les quelques secondes : alerte sonore, pastille du nombre de messages non lus. -->
+  <div class="chat" data-chat th:if="${me != null}">
+    <section class="chat-panneau" id="chat-panneau" hidden th:attr="aria-label=#{chat.title}">
+      <header class="chat-tete">
+        <strong th:text="${isDoctor} ? #{chat.withAssistant} : #{chat.withDoctor}">Discussion</strong>
+        <span class="chat-outils">
+          <button type="button" class="chat-icone" data-chat-son aria-pressed="true" th:title="#{chat.sound.on}" th:attr="aria-label=#{chat.sound}">
+            <svg class="son-actif" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9zm13.500 3A4.500 4.500 0 0 0 14 8v8a4.500 4.500 0 0 0 2.500-4zM14 3.200v2.100a7 7 0 0 1 0 13.400v2.100a9 9 0 0 0 0-17.600z"/></svg>
+            <svg class="son-coupe" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.500 12A4.500 4.500 0 0 0 14 8v2.200l2.400 2.400c.1-.2.100-.4.100-.6zM19 12c0 .9-.2 1.800-.5 2.600l1.500 1.500A9 9 0 0 0 21 12a9 9 0 0 0-7-8.800v2.100A7 7 0 0 1 19 12zM4.300 3 3 4.300 7.700 9H3v6h4l5 4v-6.700l4.300 4.300c-.7.500-1.400.9-2.300 1.100v2.100a9 9 0 0 0 3.600-1.800l2.100 2.100 1.300-1.300zM12 5 9.900 7.100 12 9.200z"/></svg>
+          </button>
+          <button type="button" class="chat-icone" data-chat-fermer th:title="#{cons.close}" th:attr="aria-label=#{chat.close}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.400 5 5 6.400 10.600 12 5 17.600 6.400 19l5.600-5.600 5.600 5.600 1.400-1.400L13.400 12 19 6.400 17.600 5 12 10.600z"/></svg>
+          </button>
+        </span>
+      </header>
+      <div class="chat-liste" role="log" aria-live="polite" tabindex="0"></div>
+      <p class="chat-vide" hidden th:text="#{chat.empty}">Aucun message.</p>
+      <!-- Messages rapides : un clic envoie (avec le patient joint, s'il y en a un), dans la langue de l'expéditeur -->
+      <div class="chat-rapides" role="group" th:attr="aria-label=#{chat.quick}">
+        <th:block th:if="${isDoctor}">
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.next.msg}" th:text="#{chat.q.next}">Patient suivant</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.ready.msg}" th:text="#{chat.q.ready}">Je suis prête</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.bringIn.msg}" th:text="#{chat.q.bringIn}">Faites-le entrer</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.moment.msg}" th:text="#{chat.q.moment}">Un instant</button>
+        </th:block>
+        <th:block th:unless="${isDoctor}">
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.arrived.msg}" th:text="#{chat.q.arrived}">Patient arrivé</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.seated.msg}" th:text="#{chat.q.seated}">Patient installé</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.fileReady.msg}" th:text="#{chat.q.fileReady}">Dossier prêt</button>
+          <button type="button" class="chat-rapide" th:attr="data-chat-rapide=#{chat.q.urgent.msg}" th:text="#{chat.q.urgent}">Urgence</button>
+        </th:block>
+      </div>
+      <!-- Patient joint : le message affichera un lien vers son dossier -->
+      <div class="chat-joint" hidden>
+        <span><th:block th:text="#{patient.name} + ' :'">Patient :</th:block> <strong class="chat-joint-nom"></strong></span>
+        <button type="button" class="chat-icone" data-chat-joint-retirer th:title="#{chat.patient.remove}" th:attr="aria-label=#{chat.patient.remove}">×</button>
+      </div>
+      <div class="chat-recherche" hidden>
+        <input type="search" class="chat-recherche-champ" th:placeholder="#{chat.patient.search}" th:attr="aria-label=#{pat.list.search.label}" autocomplete="off">
+        <ul class="chat-recherche-liste"></ul>
+      </div>
+      <form class="chat-saisie" autocomplete="off">
+        <button type="button" class="chat-icone chat-patient-bouton" data-chat-patient th:title="#{chat.patient.attach}" th:attr="aria-label=#{chat.patient.attach}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.300 0-8 1.700-8 5v2h16v-2c0-3.300-4.700-5-8-5z"/></svg>
+        </button>
+        <textarea name="texte" rows="1" maxlength="900" th:placeholder="#{chat.write}" th:attr="aria-label=#{chat.message}"></textarea>
+        <button type="submit" class="bouton principal petit" th:text="#{chat.send}">Envoyer</button>
+      </form>
+    </section>
+    <button type="button" class="chat-bouton" data-chat-ouvrir aria-controls="chat-panneau" aria-expanded="false" th:attr="aria-label=#{chat.title}" th:title="#{chat.title}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 1-2zm3 5v2h10V8zm0 4v2h7v-2z"/></svg>
+      <span class="chat-badge" hidden>0</span>
+    </button>
+  </div>
+  <!-- Textes du script app.js dans la langue de l'utilisateur (voir texte() dans app.js) -->
+  <div id="textes-js" hidden
+       th:data-t-session-warning="#{js.sessionWarning}" th:data-t-stay="#{js.stay}"
+       th:data-t-sound-on="#{chat.sound.on}" th:data-t-sound-off="#{chat.sound.off}"
+       th:data-t-no-patient="#{plan.patient.none}" th:data-t-not-sent="#{chat.notSent}"></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="${m.sousTitre != null ? m.sousTitre : m.titre} + ' - MedSol'">Rédaction</title></head>
+<body>
+<!-- Rédaction d'un courrier ou d'un compte rendu, reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='ordonnances',c=${c.id})}" th:text="'‹ ' + ${patient.nomComplet()}">‹ Patient</a>
+      <h1 th:text="${m.sousTitre != null} ? ${m.sousTitre} : ${m.titre}">Lettre de référence</h1>
+      <p class="sous-titre" th:text="#{dos.consultationOf(${#temporals.format(c.date, 'dd/MM/yyyy')})}">Consultation du</p>
+    </div>
+  </header>
+  <p th:if="${param.enregistre}" class="alerte succes" role="status" th:text="#{doc.saved}">Enregistré.</p>
+
+  <form class="carte formulaire-patient" method="post" th:action="@{/consultations/{c}/redaction/{m}(c=${c.id},m=${m.code})}">
+    <label class="large" th:if="${m.code == 'LETTRE'}"><th:block th:text="#{doc.recipient}">Destinataire</th:block>
+      <input type="text" name="destinataire" maxlength="200" th:value="${destinataire}" th:placeholder="#{doc.recipient.example}"></label>
+    <label class="large"><span th:text="${m.code == 'LETTRE'} ? #{doc.letter.text} : #{doc.report}">Texte</span>
+      <textarea name="contenu" rows="16" required maxlength="20000" th:text="${contenu}"></textarea></label>
+    <label class="large" th:if="${m.conclusion}"><th:block th:text="#{doc.conclusion}">Conclusion</th:block>
+      <textarea name="conclusion" rows="3" maxlength="5000" th:text="${conclusion}"></textarea></label>
+    <div class="actions">
+      <button type="submit" class="bouton" th:text="#{save}">Enregistrer</button>
+      <button type="submit" name="imprimer" value="true" class="bouton principal" formtarget="_blank" th:text="#{doc.saveAndPrint}">Enregistrer et imprimer (PDF)</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>

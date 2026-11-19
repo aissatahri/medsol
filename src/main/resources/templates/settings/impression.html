@@ -1,0 +1,98 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.print} + ' - MedSol'">Impression - MedSol</title></head>
+<body>
+<!-- Paramètres › Impression : police, marges, et pour chaque élément du document : affichage, taille, gras, position -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.settings} + ' › ' + #{settings.print}">Paramètres › Impression</h1>
+      <p class="sous-titre" th:text="#{print.subtitle}">Adaptez chaque document à vos feuilles : police, tailles et position des éléments.</p>
+    </div>
+  </header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('impression')}"></nav>
+    <div class="parametres-section">
+      <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+      <p class="alerte succes" role="status" th:if="${done}" th:text="#{${done}}"></p>
+
+      <nav class="onglets-documents" th:attr="aria-label=#{print.documents}">
+        <a th:each="t : ${types}" th:href="@{/settings/impression(document=${t.cle})}" th:text="${t.libelle}"
+           th:classappend="${t.cle == type.cle} ? 'actif'" th:attr="aria-current=${t.cle == type.cle} ? 'page' : null">Document</a>
+      </nav>
+
+      <div class="carte aide-impression">
+        <p th:text="#{print.help.empty}">Laissez une case vide pour garder la mise en page de MedSol.</p>
+        <p th:text="#{print.help.position}">Position : en millimètres depuis le coin haut-gauche de la feuille.</p>
+        <p th:text="#{print.help.overlap}">Un élément placé sort du fil du texte : augmentez la marge du haut pour lui laisser la place.</p>
+        <p th:if="${preimprime}" th:text="#{print.help.preprinted}">Vous imprimez sur papier à en-tête.</p>
+      </div>
+
+      <form class="carte formulaire formulaire-impression" method="post" th:action="@{/settings/impression}">
+        <input type="hidden" name="document" th:value="${type.cle}">
+        <h2 th:text="${type.libelle} + ' (' + ${type.format} + ')'">Ordonnance (A5)</h2>
+
+        <div class="grille-impression">
+          <label><th:block th:text="#{print.font}">Police</th:block>
+            <select name="police" class="champ-liste">
+              <option value="" th:text="#{print.font.default}">Par défaut (Helvetica)</option>
+              <option th:each="p : ${polices}" th:value="${p}" th:selected="${m.police == p}"
+                      th:text="${p == 'HELVETICA'} ? 'Helvetica (sans empattement)' : (${p == 'TIMES'} ? 'Times (avec empattement)' : 'Courier (machine à écrire)')">Police</option>
+            </select></label>
+          <label th:each="k : ${ {{'haut', #messages.msg('print.margin.top'), type.haut}, {'bas', #messages.msg('print.margin.bottom'), type.bas},
+                                   {'gauche', #messages.msg('print.margin.left'), type.cote}, {'droite', #messages.msg('print.margin.right'), type.cote}} }">
+            <th:block th:text="${k[1]} + ' (mm)'">Marge</th:block>
+            <input type="text" inputmode="decimal" th:name="${k[0]}" th:placeholder="${#numbers.formatDecimal(k[2], 1, 0)}"
+                   th:value="${k[0] == 'haut'} ? ${m.haut} : (${k[0] == 'bas'} ? ${m.bas} : (${k[0] == 'gauche'} ? ${m.gauche} : ${m.droite}))"></label>
+        </div>
+
+        <div class="tableau-defilant">
+          <table class="tableau compact tableau-impression">
+            <thead>
+              <tr><th th:text="#{print.element}">Élément</th><th th:text="#{print.visible}">Afficher</th><th th:text="#{print.size}">Taille (pt)</th>
+                <th th:text="#{print.bold}">Gras</th><th th:text="#{print.x}">X (mm)</th><th th:text="#{print.y}">Y (mm)</th></tr>
+            </thead>
+            <tbody>
+              <tr th:each="e : ${type.elements}" th:with="r=${elements[e.cle]}">
+                <td th:text="${e.libelle}">Date</td>
+                <td>
+                  <th:block th:if="${e.masquable}">
+                    <input type="hidden" th:name="'present_' + ${e.cle}" value="1">
+                    <input type="checkbox" th:name="'v_' + ${e.cle}" value="true" th:checked="${r.visible != null} ? ${r.visible} : ${e.visible}"
+                           th:attr="aria-label=#{print.visible} + ' : ' + ${e.libelle}">
+                  </th:block>
+                  <span th:unless="${e.masquable}" class="note">—</span>
+                </td>
+                <td><input type="text" inputmode="decimal" th:name="'t_' + ${e.cle}" th:value="${r.taille}"
+                           th:placeholder="${#numbers.formatDecimal(e.taille, 1, 0)}" th:attr="aria-label=#{print.size} + ' : ' + ${e.libelle}"></td>
+                <td><select th:name="'g_' + ${e.cle}" th:attr="aria-label=#{print.bold} + ' : ' + ${e.libelle}">
+                  <option value="" th:text="${e.gras} ? #{print.bold.default.yes} : #{print.bold.default.no}">Par défaut</option>
+                  <option value="oui" th:selected="${r.gras != null and r.gras}" th:text="#{print.bold.yes}">Gras</option>
+                  <option value="non" th:selected="${r.gras != null and !r.gras}" th:text="#{print.bold.no}">Normal</option>
+                </select></td>
+                <td><input th:if="${e.placable}" type="text" inputmode="decimal" th:name="'x_' + ${e.cle}" th:value="${r.x}"
+                           th:placeholder="#{print.auto}" th:attr="aria-label=#{print.x} + ' : ' + ${e.libelle}">
+                  <span th:unless="${e.placable}" class="note" th:text="#{print.follows}">suit le texte</span></td>
+                <td><input th:if="${e.placable}" type="text" inputmode="decimal" th:name="'y_' + ${e.cle}" th:value="${r.y}"
+                           th:placeholder="#{print.auto}" th:attr="aria-label=#{print.y} + ' : ' + ${e.libelle}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="actions actions-impression">
+          <button type="submit" class="bouton" th:formaction="@{/settings/impression/apercu(grille=true)}" formtarget="_blank"
+                  th:text="#{print.preview.grid}">Aperçu avec grille</button>
+          <button type="submit" class="bouton" th:formaction="@{/settings/impression/apercu}" formtarget="_blank"
+                  th:text="#{print.preview}">Aperçu</button>
+          <button type="submit" class="bouton principal" name="action" value="enregistrer" th:text="#{save}">Enregistrer</button>
+          <button type="submit" class="bouton-discret" name="action" value="reinitialiser"
+                  th:attr="data-confirm=#{print.reset.confirm}" th:text="#{print.reset}">Revenir à la mise en page par défaut</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+</body>
+</html>

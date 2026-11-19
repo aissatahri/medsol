@@ -1,0 +1,24 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{error.title} + ' - MedSol'">Erreur - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<!-- Page d'erreur reprise de SGCM-Cardio Web -->
+<body class="page-message">
+<main class="carte message-centre">
+  <span class="marque-logo grand" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+  </span>
+  <p class="message-code" th:text="${status}">404</p>
+  <h1 th:text="${status == 404} ? #{error.404.title} : (${status == 403} ? #{error.403.title} : #{error.title})">Erreur</h1>
+  <p th:if="${status == 404}" th:text="#{error.404}">Cette page ou ce dossier n’existe pas (ou plus).</p>
+  <p th:if="${status == 403}" th:text="#{error.403}">Cette page est réservée au médecin.</p>
+  <p th:unless="${status == 404 or status == 403}" th:text="#{error.other}">L’opération n’a pas pu aboutir.</p>
+  <a class="bouton principal large" th:href="@{/}" th:text="#{error.home}">Retour à l'accueil</a>
+</main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="#{arch.title} + ' - MedSol'">Dossiers archivés - MedSol</title></head>
+<body>
+<!-- Dossiers archivés (médecin) : retirés des listes mais conservés ; « Restaurer » les remet dans les listes -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="@{/patients}" th:text="'‹ ' + #{nav.patients}">‹ Patients</a>
+      <h1 th:text="#{arch.title}">Dossiers archivés</h1>
+      <p class="sous-titre" th:text="#{arch.subtitle}">Retirés des listes mais conservés.</p>
+    </div>
+  </header>
+  <div class="carte carte-tableau">
+    <p class="vide" th:if="${#lists.isEmpty(archives)}" th:text="#{arch.none}">Aucun dossier archivé.</p>
+    <table class="tableau tableau-patients" th:unless="${#lists.isEmpty(archives)}">
+      <thead>
+        <tr><th th:text="#{patient.name}">Patient</th><th class="masque-mobile" th:text="#{patient.number}">N° dossier</th>
+          <th class="masque-mobile" th:text="#{arch.birth}">Naissance</th><th th:text="#{arch.when}">Archivé le</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr th:each="a : ${archives}">
+          <td><strong th:text="${a.nomComplet}">ALAMI Youssef</strong>
+            <small class="note" th:if="${a.telephone != null}" th:text="${a.telephone}">06…</small></td>
+          <td class="masque-mobile"><span class="code" th:text="${a.numero}">12</span></td>
+          <td class="masque-mobile chiffres" th:text="${a.dateNaissance != null} ? ${#temporals.format(a.dateNaissance, 'dd/MM/yyyy')} : '—'">14/03/1972</td>
+          <td class="chiffres" th:text="${#temporals.format(a.archiveLe.atZone(cab.zone), 'dd/MM/yyyy')}">18/11/2026</td>
+          <td class="raccourcis-patient">
+            <form th:action="@{/patients/{id}/restaurer(id=${a.id})}" method="post">
+              <button type="submit" class="bouton petit principal" th:text="#{arch.restore}">Restaurer</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

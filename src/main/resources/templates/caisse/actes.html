@@ -1,0 +1,26 @@
+<!-- Actes réalisés pendant la consultation : payé ou offert ; le total alimente la caisse (repris de SGCM-Cardio Web) -->
+<form th:fragment="actes" id="actes" class="carte" th:hx-post="@{/consultations/{c}/actes(c=${consultationId})}"
+      hx-target="#actes" hx-swap="outerHTML">
+  <h2 class="titre-lien"><th:block th:text="#{cash.acts.title}">Actes et paiement</th:block> <a th:href="@{/caisse}" th:text="#{cash.link}">Caisse ›</a></h2>
+  <p th:if="${messageActes != null}" class="alerte succes" th:text="${messageActes}" role="status">Enregistré</p>
+  <p class="vide" th:if="${#lists.isEmpty(catalogue)}" th:text="#{cash.acts.none}">Aucun acte dans le catalogue.</p>
+  <ul class="liste actes" th:unless="${#lists.isEmpty(catalogue)}">
+    <li th:each="a : ${catalogue}" class="acte">
+      <span class="ligne-texte"><strong th:text="${a.nom}">Consultation</strong>
+        <small th:text="${@monnaie.format(a.prix, devise)}">300 DH</small></span>
+      <select th:name="'a_' + ${a.id}" th:attr="aria-label=#{cash.acts.done(${a.nom})}">
+        <option value="" th:selected="${etat.get(a.id) == null}">—</option>
+        <option value="paye" th:selected="${etat.get(a.id) == true}" th:text="#{cash.acts.paid}">Payé</option>
+        <option value="offert" th:selected="${etat.get(a.id) == false}" th:text="#{cash.acts.free}">Offert</option>
+      </select>
+    </li>
+  </ul>
+  <div class="barre-actes">
+    <span th:text="#{cash.totalPaid(${@monnaie.format(total, devise)}, ${@monnaie.format(verse, devise)})}">Total</span>
+    <span class="boutons-entete">
+      <a class="bouton petit" th:if="${@monnaie.positif(total)}" th:href="@{/caisse/{c}/facture(c=${consultationId})}" th:text="#{pat.invoice}">Facture</a>
+      <a class="bouton petit" target="_blank" rel="noopener" th:if="${@monnaie.positif(verse)}" th:href="@{/caisse/{c}/recu(c=${consultationId})}" th:text="#{cash.receipt}">Reçu</a>
+      <button type="submit" class="bouton principal petit" th:text="#{cash.acts.save}">Enregistrer les actes</button>
+    </span>
+  </div>
+</form>

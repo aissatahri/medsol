@@ -1,0 +1,65 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="#{login.title} + ' - MedSol'">Connexion - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="manifest" th:href="@{/img/manifest.json(v=2)}">
+  <link rel="apple-touch-icon" th:href="@{/img/icone-180.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <script th:src="@{/js/connexion.js}" defer></script>
+</head>
+<!-- Page de connexion reprise de SGCM-Cardio Web -->
+<body class="page-connexion">
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+  <aside th:replace="~{fragments/public :: vitrine}"></aside>
+
+  <main class="connexion-panneau">
+    <div class="connexion-boite">
+      <div class="marque connexion-marque">
+        <span class="marque-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+        </span>
+        <span class="marque-texte">MedSol<small th:text="#{public.tagline}">Cabinet médical</small></span>
+      </div>
+
+      <h1 th:text="#{login.title}">Connexion</h1>
+      <p class="sous-titre" th:text="#{login.subtitle}">Identifiez-vous pour ouvrir votre espace de travail.</p>
+
+      <p class="alerte erreur" th:if="${param.error}" role="alert" th:text="#{login.error}">Identifiants incorrects.</p>
+      <p class="alerte erreur" th:if="${param.trop}" role="alert" th:text="#{limit.blocked}">Trop de tentatives.</p>
+      <p class="alerte erreur" th:if="${param.bloque}" role="alert" th:text="#{login.locked}">Compte bloqué.</p>
+      <p class="alerte erreur" th:if="${param.desactive}" role="alert" th:text="#{login.disabled}">Compte désactivé.</p>
+      <p class="alerte info" th:if="${param.logout}" role="status" th:text="#{login.logout}">Vous êtes déconnecté.</p>
+      <p class="alerte info" th:if="${param.expire}" role="status" th:text="#{login.expired}">Session expirée : reconnectez-vous.</p>
+      <p class="alerte succes" th:if="${param.registered}" role="status" th:text="#{login.registered}">Cabinet créé.</p>
+      <p class="alerte succes" th:if="${param.reinitialise}" role="status" th:text="#{login.reset}">Mot de passe enregistré.</p>
+      <p class="alerte succes" th:if="${param.bienvenue}" role="status" th:text="#{login.welcome}">Compte activé.</p>
+
+      <form th:action="@{/login}" method="post" class="formulaire">
+        <label><span th:text="#{login.email}">E-mail</span>
+          <span class="champ-icone">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 20a8 8 0 0 1 16 0z"/></svg>
+            <input type="email" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+          </span>
+        </label>
+        <label><span th:text="#{login.password}">Mot de passe</span>
+          <span class="champ-icone">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3z"/></svg>
+            <input type="password" name="password" id="motdepasse" autocomplete="current-password" required>
+            <button type="button" class="afficher-mdp" data-afficher="motdepasse" aria-pressed="false" hidden th:text="#{login.show}" th:attr="data-masquer=#{login.hide},data-montrer=#{login.show}">Afficher</button>
+          </span>
+        </label>
+        <button type="submit" class="bouton principal large" th:text="#{login.submit}">Se connecter</button>
+      </form>
+      <p class="connexion-note"><a th:href="@{/mot-de-passe-oublie}" th:text="#{login.forgot}">Mot de passe oublié ?</a></p>
+
+      <p class="connexion-note" th:text="#{login.note}">Accès réservé au personnel du cabinet.</p>
+      <p class="connexion-note"><a th:href="@{/register}" th:text="#{login.register}">Créer mon cabinet</a></p>
+      <p th:replace="~{fragments/public :: langues}"></p>
+    </div>
+  </main>
+</body>
+</html>

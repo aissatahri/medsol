@@ -1,0 +1,129 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="#{register.title} + ' - MedSol'">Créer mon cabinet - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="manifest" th:href="@{/img/manifest.json(v=2)}">
+  <link rel="apple-touch-icon" th:href="@{/img/icone-180.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <script th:src="@{/js/connexion.js}" defer></script>
+</head>
+<!-- Inscription : deux étapes visibles sur une seule page (le cabinet, puis le compte du médecin). Le pays règle la
+     devise et le fuseau horaire ; la spécialité choisit les champs de consultation. -->
+<body class="page-connexion page-inscription">
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+  <aside th:replace="~{fragments/public :: vitrine-essai}"></aside>
+
+  <main class="connexion-panneau">
+    <div class="connexion-boite inscription">
+      <div class="marque connexion-marque">
+        <span class="marque-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+        </span>
+        <span class="marque-texte">MedSol<small th:text="#{public.tagline}">Cabinet médical</small></span>
+      </div>
+
+      <span class="badge-essai" th:text="#{reg.badge}">30 jours gratuits</span>
+      <h1 th:text="#{reg.title}">Créez votre cabinet</h1>
+      <p class="sous-titre" th:text="#{reg.subtitle}">Sans carte bancaire. Votre espace est prêt en deux minutes.</p>
+      <p class="alerte erreur" th:if="${param.trop}" role="alert" th:text="#{limit.blocked}">Trop de tentatives.</p>
+      <p class="alerte succes invitation-parrain" th:if="${parrainNom != null}" role="status"
+         th:text="#{ref.invited(${parrainNom})}">Invité par Cabinet du Dr Benali : 1 mois offert à votre premier abonnement.</p>
+      <p class="alerte info offre-fondateur" th:if="${fondateur != null and fondateur.ouverte()}"
+         th:text="#{founder.register(${#numbers.formatInteger(fondateur.mensuel, 1, 'WHITESPACE')} + ' DH', ${'' + fondateur.restantes()})}">Offre fondateur.</p>
+
+      <form th:action="@{/register}" th:object="${form}" method="post" class="formulaire inscription-formulaire" novalidate>
+        <input type="hidden" th:field="*{parrain}">
+        <fieldset class="etape">
+          <legend><span class="etape-numero">1</span><th:block th:text="#{reg.step.cabinet}">Votre cabinet</th:block></legend>
+          <label><span th:text="#{register.cabinet}">Nom du cabinet</span>
+            <span class="champ-icone">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v4h4a1 1 0 0 1 1 1v11h2v2H2v-2zm2 0h3v-4h2v4h2V6H6zm9 0h3v-10h-3zM8 8h2v2H8zm0 4h2v2H8z"/></svg>
+              <input th:field="*{cabinetName}" required maxlength="150" autocomplete="organization" th:placeholder="#{reg.cabinet.ph}">
+            </span>
+            <span class="erreur-champ" th:errors="*{cabinetName}"></span></label>
+          <div class="grille-inscription">
+            <label><span th:text="#{register.specialty}">Spécialité</span>
+              <select th:field="*{specialty}" class="champ-liste" required>
+                <option value="" th:text="#{reg.specialty.choose}">Choisir…</option>
+                <option th:each="s : ${specialties}" th:value="${s.code}" th:text="${s.label}"></option>
+              </select>
+              <span class="erreur-champ" th:errors="*{specialty}"></span></label>
+            <label><span th:text="#{reg.country}">Pays</span>
+              <select th:field="*{country}" class="champ-liste" required>
+                <option th:each="p : ${pays}" th:value="${p.code}" th:text="${p.nom}"></option>
+              </select>
+              <span class="erreur-champ" th:errors="*{country}"></span></label>
+          </div>
+          <small class="aide-champ" th:text="#{reg.country.help}">La devise et le fuseau horaire sont réglés selon le pays.</small>
+        </fieldset>
+
+        <fieldset class="etape">
+          <legend><span class="etape-numero">2</span><th:block th:text="#{reg.step.account}">Votre compte médecin</th:block></legend>
+          <label><span th:text="#{reg.doctor}">Prénom et nom du médecin</span>
+            <span class="champ-icone">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 20a8 8 0 0 1 16 0z"/></svg>
+              <input th:field="*{doctorName}" required maxlength="150" autocomplete="name" th:placeholder="#{reg.doctor.ph}">
+            </span>
+            <span class="erreur-champ" th:errors="*{doctorName}"></span></label>
+          <label><span th:text="#{reg.email}">E-mail professionnel</span>
+            <span class="champ-icone">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 7.2L4 7.3V17h16V7.3zM5.2 7l6.8 4.1L18.8 7z"/></svg>
+              <input th:field="*{email}" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required
+                     th:placeholder="#{reg.email.ph}">
+            </span>
+            <span class="erreur-champ" th:errors="*{email}"></span></label>
+          <label><span th:text="#{login.password}">Mot de passe</span>
+            <span class="champ-icone">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3z"/></svg>
+              <input th:field="*{password}" id="mdp-inscription" type="password" autocomplete="new-password" minlength="10" required
+                     data-force="force-mdp">
+              <button type="button" class="afficher-mdp" data-afficher="mdp-inscription" aria-pressed="false" hidden th:text="#{login.show}"
+                      th:attr="data-masquer=#{login.hide},data-montrer=#{login.show}">Afficher</button>
+            </span>
+            <span class="force-mdp" id="force-mdp" aria-live="polite"
+                  th:attr="data-faible=#{reg.strength.weak},data-moyen=#{reg.strength.medium},data-fort=#{reg.strength.strong}">
+              <span class="force-barre"><span></span></span><small th:text="#{reg.password.help}">10 caractères minimum.</small></span>
+            <span class="erreur-champ" th:errors="*{password}"></span></label>
+        </fieldset>
+
+        <fieldset class="etape etape-source">
+          <legend><span class="etape-numero">3</span><th:block th:text="#{src.title}">Comment avez-vous connu MedSol ?</th:block></legend>
+          <div class="grille-inscription">
+            <label><span class="visuellement-cache" th:text="#{src.title}">Comment avez-vous connu MedSol ?</span>
+              <select th:field="*{source}" class="champ-liste" required>
+                <option value="" th:text="#{src.choose}">Choisir…</option>
+                <option th:each="s : ${sources}" th:value="${s}" th:text="#{'src.' + ${s}}">Source</option>
+              </select>
+              <span class="erreur-champ" th:errors="*{source}"></span></label>
+            <label><span class="visuellement-cache" th:text="#{src.detail}">Précision</span>
+              <input th:field="*{sourceDetail}" maxlength="150" th:placeholder="#{src.detail.ph}"></label>
+          </div>
+        </fieldset>
+
+        <label class="case case-cgu"><input type="checkbox" th:field="*{cgu}" required>
+          <span><th:block th:text="#{register.cgu.accept}">J'accepte les</th:block>
+            <a th:href="@{/conditions}" target="_blank" th:text="#{register.cgu.link}">conditions générales</a>
+            <th:block th:text="#{register.dpa.and}">et l’</th:block><a th:href="@{/sous-traitance}" target="_blank" th:text="#{register.dpa.link}">accord de traitement des données</a></span></label>
+        <span class="erreur-champ" th:errors="*{cgu}"></span>
+
+        <button type="submit" class="bouton principal large bouton-essai">
+          <th:block th:text="#{reg.submit}">Démarrer mon essai gratuit</th:block>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 5.3 19.9 12l-6.7 6.7-1.4-1.4 4.3-4.3H4v-2h12.1l-4.3-4.3z"/></svg>
+        </button>
+        <ul class="confiance">
+          <li th:text="#{reg.trust1}">Sans carte bancaire</li>
+          <li th:text="#{reg.trust2}">Sans engagement</li>
+          <li th:text="#{reg.trust3}">Données chiffrées, hébergées dans l'UE</li>
+        </ul>
+      </form>
+      <p class="connexion-note"><th:block th:text="#{reg.have}">Déjà inscrit ?</th:block>
+        <a th:href="@{/login}" th:text="#{reg.login}">Se connecter</a></p>
+      <p th:replace="~{fragments/public :: langues}"></p>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+
+target/
+
+*.log
+sauvegardes/
+
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

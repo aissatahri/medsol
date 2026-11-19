@@ -1,0 +1,12 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Rubriques des paramètres (menu vertical repris de SGCM-Cardio Web) -->
+<nav class="carte parametres-menu" th:fragment="navigation(actif)" th:attr="aria-label=#{nav.settings}">
+  <a th:each="x : ${ {{'cabinet', #messages.msg('settings.cabinet')}, {'horaires', #messages.msg('settings.hours')}, {'reservation', #messages.msg('settings.booking')}, {'rappels', #messages.msg('settings.reminders')}, {'impression', #messages.msg('settings.print')}, {'actes', #messages.msg('settings.acts')},
+                      {'consultation', #messages.msg('settings.consultation')}, {'users', #messages.msg('settings.users')}, {'journal', #messages.msg('settings.journal')}} }"
+     th:href="@{/settings/{c}(c=${x[0]})}" th:text="${x[1]}"
+     th:classappend="${x[0] == actif} ? 'actif'" th:attr="aria-current=${x[0] == actif} ? 'page' : null">Rubrique</a>
+</nav>
+</body>
+</html>

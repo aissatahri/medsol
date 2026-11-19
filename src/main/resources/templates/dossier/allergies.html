@@ -1,0 +1,12 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Bandeau rouge des allergies connues, en tête du dossier (vide sans allergie) -->
+<div id="bandeau-allergies" th:fragment="bandeau">
+  <p class="alerte erreur bandeau-allergies" th:unless="${#lists.isEmpty(allergies)}" role="alert">
+    <strong th:text="#{dos.allergies} + ' :'">Allergies :</strong>
+    <span th:text="${#strings.listJoin(allergies.![nom], ' · ')}">Pénicilline</span>
+  </p>
+</div>
+</body>
+</html>

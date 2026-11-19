@@ -1,0 +1,67 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Volet de présentation des pages publiques, repris de la page de connexion de SGCM-Cardio Web -->
+<aside th:fragment="vitrine" class="connexion-vitrine">
+  <div class="marque">
+    <span class="marque-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+    </span>
+    <span class="marque-texte">MedSol<small th:text="#{public.tagline}">Cabinet médical</small></span>
+  </div>
+  <div class="vitrine-message">
+    <h2 th:text="#{public.title}">Le dossier de vos patients, du secrétariat à la consultation.</h2>
+    <p th:text="#{public.subtitle}">Rendez-vous, salle d’attente, consultations, ordonnances et caisse dans un seul espace de travail.</p>
+    <svg class="vitrine-trace" viewBox="0 0 520 80" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 44h150l12-8 10 8h18l10-36 14 68 10-32h22l14-12 14 12h236"/>
+    </svg>
+  </div>
+  <ul class="vitrine-points">
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.600-1.600-8-6-8-11V5zm-1.200 13.400l5.600-5.600-1.400-1.400-4.200 4.200-1.800-1.800-1.400 1.400z"/></svg>
+      <span th:text="#{public.point1}">Connexion chiffrée et comptes personnels</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 1-1.700-4-2.400z"/></svg>
+      <span th:text="#{public.point2}">Fermeture automatique de la session</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.500V8h4.500zM8 12v2h8v-2zm0 4v2h5v-2z"/></svg>
+      <span th:text="#{public.point3}">Chaque accès à un dossier est inscrit au journal</span></li>
+  </ul>
+</aside>
+
+<!-- Serveur de test : bandeau sur toutes les pages, pour qu'aucun vrai patient n'y soit saisi -->
+<div th:fragment="bandeau-test" th:if="${serveurTest}" class="bandeau-test" role="alert">
+  <strong th:text="#{test.banner.title}">Serveur de test</strong>
+  <span th:text="#{test.banner.text}">Données fictives uniquement : ne saisissez aucun vrai patient.</span>
+  <a th:if="${!#strings.isEmpty(urlProduction)}" th:href="${urlProduction}" th:text="#{test.banner.link(${#strings.replace(urlProduction, 'https://', '')})}">Vos vrais patients : med.appsol.app</a>
+</div>
+
+<!-- Volet de l'inscription : ce que comprend l'essai -->
+<aside th:fragment="vitrine-essai" class="connexion-vitrine vitrine-essai">
+  <div class="marque">
+    <span class="marque-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+    </span>
+    <span class="marque-texte">MedSol<small th:text="#{public.tagline}">Cabinet médical</small></span>
+  </div>
+  <div class="vitrine-message">
+    <h2 th:text="#{reg.v.title}">Tout votre cabinet, dès aujourd'hui.</h2>
+    <p th:text="#{reg.v.text}">Essayez MedSol 30 jours avec votre équipe, sans engagement.</p>
+    <ul class="vitrine-fonctions">
+      <li th:each="i : ${ {1, 2, 3, 4, 5} }"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 16.2-4.2-4.2-1.4 1.4 5.6 5.6 11-11-1.4-1.4z"/></svg>
+        <span th:text="#{'reg.v.f' + ${i}}">Fonction</span></li>
+    </ul>
+  </div>
+  <ul class="vitrine-points">
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.600-1.600-8-6-8-11V5zm-1.200 13.400l5.600-5.600-1.400-1.400-4.200 4.200-1.800-1.800-1.400 1.400z"/></svg>
+      <span th:text="#{reg.v.secure}">Données chiffrées, sauvegardées chaque jour</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 5h-2v6l5 3 1-1.700-4-2.400z"/></svg>
+      <span th:text="#{reg.v.support}">Accompagnement à la prise en main</span></li>
+  </ul>
+</aside>
+
+<p th:fragment="langues" class="connexion-langues">
+  <a th:href="@{/lang(code='fr')}" th:text="#{lang.fr}">Français</a> · <a th:href="@{/lang(code='en')}" th:text="#{lang.en}">English</a> · <a th:href="@{/lang(code='es')}" th:text="#{lang.es}">Español</a>
+  <br><small class="liens-juridiques"><a th:href="@{/conditions}" th:text="#{legal.terms}">Conditions</a> ·
+    <a th:href="@{/confidentialite}" th:text="#{legal.privacy}">Confidentialité</a> ·
+    <a th:href="@{/mentions-legales}" th:text="#{legal.notice}">Mentions légales</a></small>
+</p>
+</body>
+</html>

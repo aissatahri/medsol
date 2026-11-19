@@ -1,0 +1,43 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'appointments')}">
+<head><title th:text="#{rem.title} + ' - MedSol'">Rappels - MedSol</title></head>
+<body>
+<!-- Rappels des rendez-vous repris de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="@{/planning}" th:text="'‹ ' + #{nav.appointments}">‹ Planning</a>
+      <h1 th:text="#{rem.title}">Rappels des rendez-vous</h1>
+      <p class="sous-titre" th:text="#{rem.day(${jourTexte})}">Rendez-vous de demain</p>
+    </div>
+    <form class="navigation-semaine" method="get" th:action="@{/planning/rappels}">
+      <input type="date" name="jour" th:value="${jour}" th:attr="aria-label=#{plan.cal.day}" class="champ-date">
+      <button type="submit" class="bouton" th:text="#{cash.show}">Afficher</button>
+    </form>
+  </header>
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Noté</p>
+
+  <div class="carte">
+    <p class="vide" th:if="${#lists.isEmpty(rappels)}" th:text="#{rem.none}">Aucun rendez-vous à rappeler ce jour-là.</p>
+    <ul class="liste" th:unless="${#lists.isEmpty(rappels)}">
+      <li th:each="r : ${rappels}" class="ligne-ordonnance">
+        <span class="heure" th:text="${r.heure}">09:00</span>
+        <span class="ligne-texte"><strong th:text="${r.patient}">Patient</strong>
+          <small th:text="(${r.telephone} ?: #{rem.noPhone}) + (${r.motif != null} ? ' · ' + ${r.motif} : '')">tél</small>
+          <small class="texte-succes" th:if="${r.dejaRappele != null}" th:text="#{rem.done(${r.dejaRappele})}">Rappelé</small></span>
+        <span class="actions">
+          <a th:if="${r.whatsapp != null}" class="bouton petit principal" th:href="${r.whatsapp}" target="_blank" rel="noopener">WhatsApp</a>
+          <a th:if="${r.appel != null}" class="bouton petit" th:href="${r.appel}" th:text="#{rem.call}">Appeler</a>
+          <form th:action="@{/planning/rappels/{id}(id=${r.rdvId})}" method="post">
+            <input type="hidden" name="jour" th:value="${jour}">
+            <select name="canal" th:attr="aria-label=#{rem.channel}"><option value="WHATSAPP">WhatsApp</option><option value="APPEL" th:text="#{rem.channel.call}">Appel</option><option value="SMS">SMS</option></select>
+            <button type="submit" class="bouton petit discret" th:text="#{rem.mark}">Marquer rappelé</button>
+          </form>
+        </span>
+      </li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

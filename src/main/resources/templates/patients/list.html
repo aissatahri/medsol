@@ -1,0 +1,74 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="#{nav.patients} + ' - MedSol'">Patients - MedSol</title></head>
+<body>
+<!-- Liste des patients reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.patients}">Patients</h1>
+      <p class="sous-titre" th:text="#{pat.list.subtitle}">Recherchez un dossier ou créez une nouvelle fiche.</p>
+    </div>
+    <span class="boutons-entete">
+    <a th:if="${isDoctor}" class="bouton" th:href="@{/patients/archives}" th:text="#{arch.title}">Dossiers archivés</a>
+    <a class="bouton principal" th:href="@{/patients/new}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+      <th:block th:text="#{patient.new}">Nouveau patient</th:block></a>
+    </span>
+  </header>
+  <p th:if="${succes}" class="alerte succes" role="status" th:text="${succes}">Succès</p>
+
+  <div class="carte carte-tableau">
+    <div class="recherche avec-icone">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+      <!-- Recherche pendant la frappe : seul le tableau est rechargé, l'adresse garde la recherche -->
+      <input type="search" name="q" th:value="${q}" th:placeholder="#{pat.list.search}"
+             autocomplete="off" th:attr="aria-label=#{pat.list.search.label}" autofocus
+             th:hx-get="@{/patients}" hx-trigger="input changed delay:250ms, search"
+             hx-target="#resultats" hx-push-url="true" hx-indicator="#chargement">
+      <span id="chargement" class="htmx-indicator chargement" aria-hidden="true"></span>
+    </div>
+
+    <div id="resultats" th:fragment="resultats">
+      <p class="vide" th:if="${#lists.isEmpty(patients)}"
+         th:text="${q.isEmpty()} ? #{patient.none} : #{pat.list.noMatch(${q})}">Aucun patient.</p>
+      <table class="tableau tableau-patients" th:unless="${#lists.isEmpty(patients)}">
+        <thead>
+          <tr><th th:text="#{patient.name}">Patient</th><th class="masque-mobile" th:text="#{patient.number}">N° dossier</th><th th:text="#{patient.age}">Âge</th><th th:text="#{patient.phone}">Téléphone</th><th class="masque-mobile" th:text="#{patient.nationalid}">Identifiant</th><th><span class="masque-mobile" th:text="#{pat.actions}">Actions</span></th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="p : ${patients}">
+            <td>
+              <a class="patient-lien" th:href="@{/patients/{id}(id=${p.id})}">
+                <span class="avatar" th:classappend="${p.sexe == 'F'} ? 'f' : 'm'" th:text="${p.initiales()}">AB</span>
+                <span th:text="${p.nomComplet()}">Nom Prénom</span>
+              </a>
+            </td>
+            <td class="masque-mobile"><span class="code" th:text="${p.numero}">12</span></td>
+            <td class="chiffres" th:text="${p.age() != null} ? #{dos.age(${p.age()})} : ''">40 ans</td>
+            <td class="chiffres" th:text="${p.telephone}">06…</td>
+            <td class="masque-mobile chiffres" th:text="${p.identifiantNational}">AB123</td>
+            <td class="raccourcis-patient">
+              <a th:if="${isDoctor}" class="bouton petit" th:href="@{/patients/{id}/dossier(id=${p.id})}" th:title="#{dossier.open}" th:text="#{pat.tab.file}">Dossier</a>
+              <form th:unless="${isDoctor}" th:action="@{/queue/add}" method="post">
+                <input type="hidden" name="patientId" th:value="${p.id}">
+                <button type="submit" class="bouton petit" th:title="#{pat.toQueue.help}" th:text="#{nav.queue}">Salle d'attente</button>
+              </form>
+              <a th:if="${!isDoctor and me.peut('CAISSE')}" class="bouton petit" th:href="@{/patients/{id}/facture(id=${p.id})}" th:title="#{pat.invoice.help}" th:text="#{pat.invoice}">Facture</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <nav class="pagination" th:if="${page > 0 or suivante}" th:attr="aria-label=#{pat.pages}">
+        <a class="bouton" th:if="${page > 0}" th:hx-get="@{/patients(q=${q},page=${page - 1})}"
+           th:href="@{/patients(q=${q},page=${page - 1})}" hx-target="#resultats" hx-push-url="true" th:text="#{pat.previous}">‹ Précédents</a>
+        <span th:text="#{pat.page(${page + 1}, ${result.pages()})}">Page 1</span>
+        <a class="bouton" th:if="${suivante}" th:hx-get="@{/patients(q=${q},page=${page + 1})}"
+           th:href="@{/patients(q=${q},page=${page + 1})}" hx-target="#resultats" hx-push-url="true" th:text="#{pat.next}">Suivants ›</a>
+      </nav>
+    </div>
+  </div>
+</main>
+</body>
+</html>

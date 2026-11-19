@@ -1,0 +1,120 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Analyses ou imagerie d'une consultation, repris de SGCM-Cardio Web (même morceau pour les deux, g = genre).
+     Disposition du bureau : le tableau des lignes à gauche, le panneau des résultats à droite.
+     Clés de traduction : exa.<genre>.* (analyse / imagerie) et exa.* communes. -->
+<div th:fragment="examens" th:id="'examens-' + ${g.chemin()}" class="examens-bureau" th:with="k=${'exa.' + g.chemin()}">
+  <div class="carte">
+    <h2 class="titre-lien"><span th:text="#{${k} + '.lines'}">Lignes d'analyse</span>
+      <a th:unless="${#lists.isEmpty(examens)}" class="bouton petit bleu" target="_blank" rel="noopener"
+         th:href="@{/consultations/{c}/documents/{g}(c=${consultationId},g=${g.chemin()})}" th:text="#{dos.print}">Imprimer</a>
+    </h2>
+    <p th:if="${erreur != null}" class="alerte erreur" th:text="${erreur}" role="status">Erreur</p>
+    <p th:if="${succes != null}" class="alerte succes" th:text="${succes}" role="status">Ajouté</p>
+    <p class="vide" th:if="${#lists.isEmpty(examens)}" th:text="#{${k} + '.none'}">Aucun.</p>
+    <ul class="liste lignes-examens" th:unless="${#lists.isEmpty(examens)}">
+      <li th:each="e : ${examens}" th:id="${g.chemin()} + '-' + ${e.id}" class="ligne-ordonnance">
+        <!-- Un clic sur la ligne ouvre son résultat dans le panneau de droite -->
+        <button type="button" class="ligne-examen"
+                th:hx-get="@{/consultations/{c}/examens/{g}/{e}/modifier(c=${consultationId},g=${g.chemin()},e=${e.id})}"
+                th:hx-target="'#resultat-' + ${g.chemin()}" hx-swap="innerHTML">
+          <span class="ligne-texte">
+            <strong th:text="${e.intitule()}">NFS</strong>
+            <small th:if="${!#strings.isEmpty(e.description)}" th:text="${e.description}">à jeun</small>
+          </span>
+          <span class="pastille vert" th:if="${e.aResultat()}" th:text="#{exa.result}">Résultat</span>
+        </button>
+        <span class="actions">
+          <form th:hx-post="@{/consultations/{c}/examens/{g}/{e}/supprimer(c=${consultationId},g=${g.chemin()},e=${e.id})}"
+                th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML" th:hx-confirm="#{exa.remove.confirm(${e.intitule()})}">
+            <button type="submit" class="bouton petit danger" th:attr="aria-label=#{dos.delete}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>
+            </button>
+          </form>
+        </span>
+      </li>
+    </ul>
+
+    <div class="ajout-medicament">
+      <div class="recherche">
+        <input type="search" name="q" autocomplete="off"
+               th:placeholder="#{${k} + '.search'}"
+               th:attr="aria-label=#{exa.search.label}"
+               th:hx-get="@{/consultations/{c}/examens/{g}/types(c=${consultationId},g=${g.chemin()})}"
+               hx-trigger="input changed delay:250ms, search" th:hx-target="'#choix-' + ${g.chemin()}" hx-swap="outerHTML">
+      </div>
+      <div th:id="'choix-' + ${g.chemin()}"></div>
+    </div>
+  </div>
+
+  <div class="carte panneau-resultat">
+    <h2 th:text="#{${k} + '.results'}">Résultats des analyses</h2>
+    <div th:id="'resultat-' + ${g.chemin()}">
+      <p class="vide" th:text="${#lists.isEmpty(examens)} ? #{exa.hint.add} : #{exa.hint.choose}">Choisissez une ligne.</p>
+    </div>
+  </div>
+</div>
+
+<div th:fragment="choix" th:id="'choix-' + ${g.chemin()}">
+  <p class="vide" th:if="${qType.length() >= 2 and #lists.isEmpty(types)}" th:text="#{exa.notFound}">Aucun type trouvé dans le catalogue.</p>
+  <ul class="liste choix" th:unless="${#lists.isEmpty(types)}">
+    <li th:each="t : ${types}">
+      <form th:hx-post="@{/consultations/{c}/examens/{g}(c=${consultationId},g=${g.chemin()})}"
+            th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML">
+        <input type="hidden" name="typeId" th:value="${t.id}">
+        <button type="submit" class="choix-medicament">
+          <strong th:text="${t.nom}">Type</strong>
+          <small th:text="${t.code}">code</small>
+        </button>
+      </form>
+    </li>
+  </ul>
+  <!-- Absent du catalogue : l'ajouter et le demander sans quitter la consultation -->
+  <button type="button" class="ajout-catalogue" th:if="${proposerAjout}"
+          th:hx-get="@{/consultations/{c}/examens/{g}/catalogue(c=${consultationId},g=${g.chemin()},nom=${qType})}"
+          th:hx-target="'#choix-' + ${g.chemin()}" hx-swap="outerHTML">
+    <span class="plus" aria-hidden="true">+</span>
+    <span><strong th:text="#{exa.addToCatalogue(${qType})}">Ajouter</strong>
+      <small th:text="#{cons.rx.addToCatalogue.help}">Il sera proposé dans toutes les consultations du cabinet.</small></span>
+  </button>
+</div>
+
+<form th:fragment="nouveauType" th:id="'choix-' + ${g.chemin()}" class="nouvelle-ligne catalogue"
+      th:hx-post="@{/consultations/{c}/examens/{g}/catalogue(c=${consultationId},g=${g.chemin()})}"
+      th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML" th:with="k=${'exa.' + g.chemin()}">
+  <strong th:text="#{${k} + '.newType'}">Nouveau type</strong>
+  <p th:if="${erreurCatalogue != null}" class="alerte erreur" th:text="${erreurCatalogue}">Erreur</p>
+  <div class="ligne-champs">
+    <label><th:block th:text="#{cons.rx.name}">Nom *</th:block> <input type="text" name="nom" required minlength="2" maxlength="200" th:value="${nomPropose}" autocomplete="off"></label>
+    <label><th:block th:text="#{exa.code}">Code (imprimé sur la demande)</th:block> <input type="text" name="code" maxlength="50" th:placeholder="#{exa.code.example}" autocomplete="off" autofocus></label>
+    <label><th:block th:text="#{exa.instruction.patient}">Consigne pour ce patient</th:block> <input type="text" name="description" maxlength="300" th:placeholder="#{exa.instruction.example}" autocomplete="off"></label>
+  </div>
+  <div class="actions">
+    <button type="button" class="bouton petit discret"
+            th:hx-get="@{/consultations/{c}/examens/{g}(c=${consultationId},g=${g.chemin()})}"
+            th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML" th:text="#{cancel}">Annuler</button>
+    <button type="submit" class="bouton petit principal" th:text="#{exa.addAndRequest}">Ajouter au catalogue et demander</button>
+  </div>
+</form>
+
+<!-- Panneau de droite : résultat de la ligne choisie (date, texte), comme « Résultats des analyses » du bureau -->
+<form th:fragment="edition" class="formulaire-resultat"
+      th:hx-post="@{/consultations/{c}/examens/{g}/{e}(c=${consultationId},g=${g.chemin()},e=${e.id})}"
+      th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML" th:with="k=${'exa.' + g.chemin()}">
+  <strong class="examen-choisi" th:text="${e.intitule()}">Type</strong>
+  <label th:text="#{${k} + '.date'}" th:for="'date-' + ${g.chemin()}">Date d'analyse :</label>
+  <input type="date" name="date" th:id="'date-' + ${g.chemin()}" th:value="${e.date}">
+  <label th:text="#{${k} + '.result'}" th:for="'texte-' + ${g.chemin()}">Résultats d'analyse :</label>
+  <textarea name="resultat" th:id="'texte-' + ${g.chemin()}" rows="7" maxlength="10000" th:text="${e.resultat}" autofocus></textarea>
+  <label th:for="'consigne-' + ${g.chemin()}" th:text="#{exa.instruction}">Consigne (imprimée sur la demande) :</label>
+  <input type="text" name="description" maxlength="300" th:id="'consigne-' + ${g.chemin()}" th:value="${e.description}" autocomplete="off">
+  <div class="actions">
+    <button type="button" class="bouton petit discret"
+            th:hx-get="@{/consultations/{c}/examens/{g}(c=${consultationId},g=${g.chemin()})}"
+            th:hx-target="'#examens-' + ${g.chemin()}" hx-swap="outerHTML" th:text="#{cancel}">Annuler</button>
+    <button type="submit" class="bouton succes" th:text="#{exa.save}">Enregistrer résultat</button>
+  </div>
+</form>
+</body>
+</html>

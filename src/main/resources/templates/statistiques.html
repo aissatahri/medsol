@@ -1,0 +1,61 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'statistiques')}">
+<head><title th:text="#{nav.stats} + ' - MedSol'">Statistiques - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.stats}">Statistiques</h1>
+      <p class="sous-titre" th:text="#{stats.year(${'' + annee})}">Année</p>
+    </div>
+    <span class="navigation-semaine">
+      <a class="bouton" th:href="@{/statistiques(annee=${annee - 1})}" th:text="'‹ ' + ${annee - 1}">‹</a>
+      <a class="bouton" th:href="@{/statistiques}" th:text="#{stats.thisYear}">Cette année</a>
+      <a class="bouton" th:href="@{/statistiques(annee=${annee + 1})}" th:text="${annee + 1} + ' ›'">›</a>
+    </span>
+  </header>
+
+  <div class="compteurs">
+    <div class="carte compteur"><span class="compteur-valeur" th:text="${totalConsultations}">0</span><span class="compteur-libelle" th:text="#{dos.consultations}">Consultations</span></div>
+    <div class="carte compteur vert"><span class="compteur-valeur" th:text="${totalNouveaux}">0</span><span class="compteur-libelle" th:text="#{stats.newPatients}">Nouveaux patients</span></div>
+    <div class="carte compteur violet"><span class="compteur-valeur" th:text="${@monnaie.format(totalEncaisse, devise)}">0</span><span class="compteur-libelle" th:text="#{stats.collected}">Encaissé</span></div>
+    <div class="carte compteur accent"><span class="compteur-valeur" th:text="${tauxAbsence} + ' %'">0 %</span>
+      <span class="compteur-libelle" th:text="#{stats.noShows(${tauxAnnulation}, ${totalRdv})}">Absences</span></div>
+  </div>
+
+  <div class="carte">
+    <h2 th:text="#{stats.monthly}">Activité mois par mois</h2>
+    <table class="tableau compact stats-mois">
+      <thead><tr><th th:text="#{stats.month}">Mois</th><th th:text="#{dos.consultations}">Consultations</th><th></th><th th:text="#{stats.new}">Nouveaux</th><th th:text="#{stats.collected}">Encaissé</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="m : ${mois}">
+          <td th:text="${m.nom}">janv.</td>
+          <td class="droite" th:text="${m.consultations}">0</td>
+          <td class="barre-cellule"><span class="barre" th:style="'width:' + ${m.pctConsultations} + '%'"></span></td>
+          <td class="droite" th:text="${m.nouveaux}">0</td>
+          <td class="droite" th:text="${@monnaie.format(m.encaisse, devise)}">0</td>
+          <td class="barre-cellule"><span class="barre verte" th:style="'width:' + ${m.pctEncaisse} + '%'"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grille-2">
+    <div class="carte" th:each="bloc : ${ {{'stats.acts', actes}, {'stats.medicines', medicaments}, {'stats.byAge', ages}, {'stats.bySex', sexes}} }">
+      <h2 th:text="#{${bloc[0]}}">Titre</h2>
+      <p class="vide" th:if="${#lists.isEmpty(bloc[1])}" th:text="#{stats.noData}">Aucune donnée.</p>
+      <table class="tableau compact" th:unless="${#lists.isEmpty(bloc[1])}">
+        <tbody>
+          <tr th:each="l : ${bloc[1]}">
+            <td th:text="${bloc[0] == 'stats.bySex'} ? #{${'stats.sex.' + l.libelle}} : (${bloc[0] == 'stats.byAge'} ? #{${'stats.age.' + l.libelle}} : ${l.libelle})">Consultation</td>
+            <td class="droite" th:text="${l.nombre}">0</td>
+            <td class="barre-cellule"><span class="barre" th:style="'width:' + ${l.pct} + '%'"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

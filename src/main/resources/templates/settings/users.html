@@ -1,0 +1,121 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.users} + ' - MedSol'">Utilisateurs - MedSol</title></head>
+<body>
+<!-- Utilisateurs : disposition de SGCM-Cardio Web (un bouton « Modifier » par compte, actions dans un panneau) -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.settings}">Paramètres</h1>
+      <p class="sous-titre" th:text="#{users.subtitle}">Comptes de connexion du cabinet.</p>
+    </div>
+  </header>
+
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('users')}"></nav>
+
+    <div class="carte parametres-section">
+      <div class="titre-lien">
+        <h2 th:text="#{settings.users}">Utilisateurs</h2>
+        <details class="actions-compte ajout-compte">
+          <summary class="bouton principal petit" th:text="'+ ' + #{users.add}">+ Ajouter une assistante</summary>
+          <form class="panneau-compte" th:action="@{/settings/users}" method="post" data-invitation-formulaire>
+            <strong th:text="#{users.add}">Ajouter une assistante</strong>
+            <label><span th:text="#{users.name}">Nom complet</span>
+              <input name="fullName" required maxlength="150" autocomplete="off"></label>
+            <label><span th:text="#{register.email}">E-mail</span>
+              <input name="email" type="email" required maxlength="200" autocomplete="off"></label>
+            <label class="case"><input type="checkbox" name="inviter" value="true" data-invitation>
+              <span th:text="#{users.invite}">Envoyer une invitation par e-mail : elle choisira son mot de passe</span></label>
+            <div class="champs-mdp">
+              <label><span th:text="#{register.password}">Mot de passe</span>
+                <input name="password" type="password" required minlength="10" maxlength="100" autocomplete="new-password"></label>
+              <label><span th:text="#{users.confirm}">Confirmation</span>
+                <input name="confirmation" type="password" required minlength="10" maxlength="100" autocomplete="new-password"></label>
+            </div>
+            <fieldset class="droits">
+              <legend th:text="#{users.rights}">Droits</legend>
+              <input type="hidden" name="reglerDroits" value="true">
+              <label class="case" th:each="d : ${droitsPossibles}"><input type="checkbox" name="droits" th:value="${d}" checked>
+                <span th:text="#{'users.right.' + ${d}}">Caisse</span></label>
+            </fieldset>
+            <small class="note" th:text="#{users.role.help}">Accès aux patients, à la salle d'attente et aux rendez-vous, pas au dossier médical.</small>
+            <button type="submit" class="bouton principal petit" th:text="#{users.create}">Créer le compte</button>
+          </form>
+        </details>
+      </div>
+      <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+      <p class="alerte succes" role="status" th:if="${done}" th:text="#{${done}}"></p>
+
+      <table class="tableau">
+        <thead><tr>
+          <th th:text="#{users.name}">Nom complet</th>
+          <th th:text="#{users.role}">Rôle</th>
+          <th class="masque-mobile" th:text="#{users.lastlogin}">Dernière connexion</th>
+          <th class="masque-mobile" th:text="#{users.createdOn}">Créé le</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="u : ${users}" th:classappend="${!u.actif} ? 'inactif'">
+            <td><strong th:text="${u.nom}">Nom</strong>
+              <small class="note" th:if="${u.id == me.id}" th:text="#{users.you}">(vous)</small>
+              <br><small class="note" th:text="${u.email}">e-mail</small></td>
+            <td>
+              <span class="pastille" th:classappend="${u.role == 'MEDECIN'} ? 'bleu' : 'vert'" th:text="#{'users.role.' + ${u.role}}">Rôle</span>
+              <span class="pastille urgent" th:unless="${u.actif}" th:text="#{users.disabled}">Désactivé</span>
+              <span class="pastille ambre" th:if="${u.bloque}" th:text="#{users.locked}">Bloqué</span>
+              <span class="pastille ambre" th:if="${u.invitation}" th:text="#{users.invitation.pending}">Invitation envoyée</span>
+              <span class="pastille bleu" th:if="${u.totp}" th:title="#{account.2fa}" th:text="#{users.2fa}">2FA</span>
+              <br th:if="${u.role != 'MEDECIN'}">
+              <small class="note" th:if="${u.role != 'MEDECIN' and #sets.isEmpty(u.droits)}" th:text="#{users.rights.none}">Aucun droit en plus</small>
+              <small class="note" th:if="${u.role != 'MEDECIN' and !#sets.isEmpty(u.droits)}"><th:block th:text="#{users.rights}">Droits</th:block> :
+                <th:block th:each="d, st : ${droitsPossibles}" th:if="${u.droits.contains(d)}" th:text="#{'users.right.' + ${d}} + ' '">Caisse</th:block></small>
+            </td>
+            <td class="masque-mobile heure" th:text="${u.derniereConnexion != null} ? ${#temporals.format(u.derniereConnexion.atZone(cab.zone), 'dd/MM/yyyy HH:mm')} : '—'">—</td>
+            <td class="masque-mobile heure" th:text="${#temporals.format(u.creeLe.atZone(cab.zone), 'dd/MM/yyyy')}">date</td>
+            <td class="droite">
+              <a class="bouton petit" th:if="${u.id == me.id}" th:href="@{/compte}" th:text="#{account.title}">Mon compte</a>
+              <details class="actions-compte" th:unless="${u.id == me.id}">
+                <summary class="bouton petit" th:text="#{users.edit}">Modifier</summary>
+                <div class="panneau-compte">
+                  <form method="post" th:action="@{/settings/users/{id}/droits(id=${u.id})}" th:if="${u.role != 'MEDECIN'}">
+                    <strong th:text="#{users.rights}">Droits</strong>
+                    <label class="case" th:each="d : ${droitsPossibles}">
+                      <input type="checkbox" name="droits" th:value="${d}" th:checked="${u.droits.contains(d)}">
+                      <span th:text="#{'users.right.' + ${d}}">Caisse</span></label>
+                    <button type="submit" class="bouton petit" th:text="#{users.rights.save}">Enregistrer les droits</button>
+                  </form>
+                  <form method="post" th:action="@{/settings/users/{id}/password(id=${u.id})}">
+                    <strong th:text="#{users.newpassword}">Nouveau mot de passe</strong>
+                    <input type="password" name="password" required minlength="10" maxlength="100" autocomplete="new-password" th:attr="aria-label=#{users.newpassword}">
+                    <input type="password" name="confirmation" required minlength="10" maxlength="100" autocomplete="new-password"
+                           th:placeholder="#{users.confirm}" th:attr="aria-label=#{users.confirm}">
+                    <button type="submit" class="bouton petit" th:text="#{users.reset}">Changer le mot de passe</button>
+                    <small class="note" th:text="#{users.reset.help}">Ses sessions ouvertes sont fermées.</small>
+                  </form>
+                  <form method="post" th:action="@{/settings/users/{id}/invitation(id=${u.id})}" th:if="${u.actif and u.role != 'MEDECIN'}">
+                    <button type="submit" class="bouton petit" th:text="${u.invitation} ? #{users.invite.again} : #{users.invite.send}">Envoyer une invitation</button>
+                  </form>
+                  <form method="post" th:action="@{/settings/users/{id}/2fa(id=${u.id})}" th:if="${u.totp and u.role != 'MEDECIN'}"
+                        th:attr="data-confirm=#{users.2fa.remove.confirm(${u.nom})}">
+                    <button type="submit" class="bouton petit" th:text="#{users.2fa.remove}">Retirer la double authentification</button>
+                  </form>
+                  <a class="bouton petit" th:href="@{/settings/journal(u=${u.id})}" th:text="#{users.history}">Historique</a>
+                  <form method="post" th:action="@{/settings/users/{id}/active(id=${u.id})}"
+                        th:attr="data-confirm=${u.actif} ? #{users.disable.confirm(${u.nom})} : null">
+                    <input type="hidden" name="value" th:value="${!u.actif}">
+                    <button type="submit" class="bouton petit" th:classappend="${u.actif} ? 'danger' : 'principal'"
+                            th:text="${u.actif} ? #{users.disable} : #{users.enable}">Désactiver</button>
+                  </form>
+                </div>
+              </details>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

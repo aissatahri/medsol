@@ -1,0 +1,27 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head><th:block th:replace="~{juridique/commun :: tete('Conditions à accepter')}"></th:block></head>
+<body class="page-message">
+<!-- Médecin d'un cabinet existant : acceptation de la version courante des conditions générales et de l'accord de
+     traitement des données, avant de continuer -->
+<main class="carte message-centre acceptation">
+  <span class="marque-logo grand" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path class="coeur" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/><path class="pouls" d="M3.5 12h4.6l1.7-3.2 2.6 6.4 1.9-3.2h6.2"/></svg>
+  </span>
+  <h1>Avant de continuer</h1>
+  <p>Pour protéger les données de vos patients, MedSol encadre son rôle par deux documents. Merci de les lire et de les
+    accepter au nom de votre cabinet (version du <span th:text="${version}">2026-11-17</span>).</p>
+  <ul class="liste-documents">
+    <li><a th:href="@{/conditions}" target="_blank">Conditions générales d'utilisation et de vente</a></li>
+    <li><a th:href="@{/sous-traitance}" target="_blank">Accord de traitement des données (sous-traitance, loi 09-08)</a></li>
+  </ul>
+  <p class="alerte erreur" th:if="${refus}" role="alert">Cochez la case pour accepter les documents.</p>
+  <form th:action="@{/accepter-conditions}" method="post" class="formulaire">
+    <label class="case case-cgu"><input type="checkbox" name="accepte" value="true">
+      <span>J'accepte, au nom de mon cabinet, les conditions générales et l'accord de traitement des données.</span></label>
+    <button type="submit" class="bouton principal large">Accepter et continuer</button>
+  </form>
+  <form th:action="@{/logout}" method="post"><button type="submit" class="bouton-discret">Se déconnecter</button></form>
+</main>
+</body>
+</html>

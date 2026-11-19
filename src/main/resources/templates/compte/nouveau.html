@@ -1,0 +1,43 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="(${type == 'INVITATION'} ? #{invite.title} : #{reset.title}) + ' - MedSol'">Nouveau mot de passe - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<!-- Lien reçu par e-mail : nouveau mot de passe (mot de passe oublié) ou premier mot de passe (invitation) -->
+<body class="page-connexion">
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+  <aside th:replace="~{fragments/public :: vitrine}"></aside>
+  <main class="connexion-panneau">
+    <div class="connexion-boite">
+      <h1 th:text="${type == 'INVITATION'} ? #{invite.title} : #{reset.title}">Nouveau mot de passe</h1>
+
+      <th:block th:if="${compte == null}">
+        <p class="alerte erreur" role="alert" th:text="#{reset.invalid}">Ce lien n'est plus valable.</p>
+        <p class="connexion-note" th:if="${type != 'INVITATION'}"><a th:href="@{/mot-de-passe-oublie}" th:text="#{reset.again}">Demander un nouveau lien</a></p>
+        <p class="connexion-note" th:if="${type == 'INVITATION'}" th:text="#{invite.again}">Demandez au médecin de vous renvoyer une invitation.</p>
+      </th:block>
+
+      <th:block th:if="${compte != null}">
+        <p class="sous-titre" th:text="${type == 'INVITATION'} ? #{invite.subtitle(${compte.nom})} : #{reset.subtitle(${compte.nom})}">Bonjour, choisissez votre mot de passe.</p>
+        <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+        <form th:action="@{${type == 'INVITATION'} ? '/invitation/' + ${jeton} : '/reinitialisation/' + ${jeton}}" method="post" class="formulaire">
+          <input type="email" name="username" th:value="${compte.email}" autocomplete="username" hidden readonly>
+          <p><strong th:text="${compte.email}">e-mail</strong></p>
+          <label><span th:text="#{users.newpassword}">Nouveau mot de passe</span>
+            <input type="password" name="password" required minlength="10" maxlength="100" autocomplete="new-password" autofocus></label>
+          <label><span th:text="#{users.confirm}">Confirmation</span>
+            <input type="password" name="confirmation" required minlength="10" maxlength="100" autocomplete="new-password"></label>
+          <small class="note" th:text="#{users.password.short}">Au moins 10 caractères.</small>
+          <button type="submit" class="bouton principal large" th:text="#{reset.submit}">Enregistrer le mot de passe</button>
+        </form>
+      </th:block>
+      <p class="connexion-note"><a th:href="@{/login}" th:text="#{forgot.back}">Retour à la connexion</a></p>
+    </div>
+  </main>
+</body>
+</html>

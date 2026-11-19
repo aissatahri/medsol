@@ -1,0 +1,9 @@
+# HTTPS automatique (Let's Encrypt) devant MedSol. Caddy fixe lui-même X-Forwarded-For à l'adresse du client.
+{$MEDSOL_DOMAINE} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy app:8080
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.hours} + ' - MedSol'">Horaires - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page"><div><h1 th:text="#{nav.settings}">Paramètres</h1></div></header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('horaires')}"></nav>
+    <div class="carte parametres-section ancien">
+    <p class="error" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+    <p class="ok" role="status" th:if="${done}" th:text="#{${done}}"></p>
+    <form th:action="@{/settings/horaires}" method="post" class="card form">
+        <p class="muted" th:text="#{horaires.help}">Le planning n'affiche que ces jours et ces heures ; un rendez-vous en dehors demande une confirmation.</p>
+        <table class="table">
+            <thead><tr><th th:text="#{horaires.day}">Jour</th><th th:text="#{horaires.morning}">Matin</th><th th:text="#{horaires.afternoon}">Après-midi</th></tr></thead>
+            <tbody>
+            <tr th:each="j : ${jours}">
+                <td th:text="${j.nom}">Lundi</td>
+                <td class="actions">
+                    <input type="time" step="900" th:name="'d' + ${j.numero} + '_1'" th:value="${j.debut1}" th:attr="aria-label=${j.nom} + ' début 1'">
+                    <input type="time" step="900" th:name="'f' + ${j.numero} + '_1'" th:value="${j.fin1}" th:attr="aria-label=${j.nom} + ' fin 1'">
+                </td>
+                <td class="actions">
+                    <input type="time" step="900" th:name="'d' + ${j.numero} + '_2'" th:value="${j.debut2}" th:attr="aria-label=${j.nom} + ' début 2'">
+                    <input type="time" step="900" th:name="'f' + ${j.numero} + '_2'" th:value="${j.fin2}" th:attr="aria-label=${j.nom} + ' fin 2'">
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="actions"><button class="btn" type="submit" th:text="#{save}">Enregistrer</button></div>
+    </form>
+    </div>
+  </div>
+</main>
+</body>
+</html>

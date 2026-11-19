@@ -1,0 +1,163 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="${patient.nomComplet()} + ' - MedSol'">Patient</title></head>
+<body>
+<!-- Fiche patient reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+<section class="dossier-patient">
+  <a class="retour" th:href="@{/patients}" th:text="'‹ ' + #{nav.patients}">‹ Patients</a>
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Enregistré</p>
+  <p th:if="${error}" class="alerte erreur" th:text="#{${error}}" role="alert">Erreur</p>
+
+  <!-- En-tête du dossier : identité, repères utiles à l'accueil et actions -->
+  <header class="carte dossier-tete">
+    <div class="dossier-haut">
+      <div class="dossier-identite">
+        <span class="avatar grand" th:classappend="${patient.sexe == 'F'} ? 'f' : 'm'" th:text="${patient.initiales()}">AB</span>
+        <div class="dossier-nom">
+          <p class="dossier-numero"><th:block th:text="#{pat.fileNo}">Dossier n°</th:block> <b th:text="${patient.numero}">123</b></p>
+          <h1 th:text="${patient.nomComplet()}">Nom Prénom</h1>
+          <p class="dossier-etat-civil">
+            <span th:if="${patient.sexe != null}" th:text="#{'patient.sex.' + ${patient.sexe}}">Féminin</span>
+            <span th:if="${patient.age() != null}" th:text="#{dos.age(${patient.age()})}">54 ans</span>
+          </p>
+        </div>
+      </div>
+      <div class="dossier-actions">
+        <form th:if="${isDoctor}" th:action="@{/consultations/start}" method="post">
+          <input type="hidden" name="patientId" th:value="${patient.id}">
+          <button type="submit" class="bouton principal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.5V8h4.5zM11 11v2H9v2h2v2h2v-2h2v-2h-2v-2z"/></svg>
+            <th:block th:text="#{consultation.open}">Consultation du jour</th:block></button>
+        </form>
+        <a th:if="${isDoctor}" class="bouton" th:href="@{/patients/{id}/dossier(id=${patient.id})}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6a1 1 0 0 1 1 1v1h3a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V3a1 1 0 0 1 1-1zm1 2v2h4V4zM7 11v2h10v-2zm0 4v2h7v-2z"/></svg>
+          <th:block th:text="#{dossier.open}">Dossier médical</th:block></a>
+        <form th:unless="${isDoctor}" th:action="@{/queue/add}" method="post">
+          <input type="hidden" name="patientId" th:value="${patient.id}">
+          <button type="submit" class="bouton principal" th:text="#{nav.queue}">Salle d'attente</button>
+        </form>
+        <a th:if="${!isDoctor and me.peut('CAISSE')}" class="bouton" th:href="@{/patients/{id}/facture(id=${patient.id})}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2l2 1.5L9 2l2 1.5L13 2l2 1.5L17 2l2 1.5V22l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L7 22l-2-1.5zM8 8v2h8V8zm0 4v2h8v-2z"/></svg>
+          <th:block th:text="#{pat.invoice}">Facture</th:block></a>
+        <a class="bouton" th:href="@{/patients/{id}/edit(id=${patient.id})}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17.2V20h2.800l8.300-8.300-2.800-2.800zm13.700-7.600a1 1 0 0 0 0-1.400l-1.900-1.900a1 1 0 0 0-1.400 0l-1.400 1.400 2.800 2.800z"/></svg>
+          <th:block th:text="#{dos.edit}">Modifier</th:block></a>
+        <details class="confirmer">
+          <summary class="bouton danger" th:text="#{patient.archive}">Archiver</summary>
+          <form class="carte" th:action="@{/patients/{id}/archive(id=${patient.id})}" method="post">
+            <p><strong th:text="#{pat.archive.confirm}">Archiver ce dossier ?</strong></p>
+            <p class="note" th:text="#{pat.archive.help}">Il sera retiré des listes mais conservé.</p>
+            <button type="submit" class="bouton danger" th:text="#{dos.confirm}">Confirmer</button>
+          </form>
+        </details>
+      </div>
+    </div>
+
+    <dl class="dossier-faits">
+      <div><dt th:text="#{patient.birthdate}">Date de naissance</dt>
+        <dd th:text="${patient.dateNaissance != null} ? ${#temporals.format(patient.dateNaissance, 'dd/MM/yyyy')} : '—'">—</dd></div>
+      <div><dt th:text="#{patient.phone}">Téléphone</dt>
+        <dd><a th:if="${patient.telephone != null}" th:href="'tel:' + ${#strings.replace(patient.telephone, ' ', '')}" th:text="${patient.telephone}">06…</a>
+          <span th:if="${patient.telephone == null}">—</span></dd></div>
+      <div><dt th:text="#{patient.nationalid}">Identifiant</dt><dd th:text="${patient.identifiantNational} ?: '—'">—</dd></div>
+      <div><dt th:text="#{pat.coverage}">Couverture</dt><dd th:text="${patient.couverture} ?: '—'">—</dd></div>
+    </dl>
+  </header>
+
+  <div class="onglets" role="tablist" th:attr="aria-label=#{pat.tabs}" data-onglets>
+    <button type="button" role="tab" id="tab-dossier" aria-controls="onglet-dossier" aria-selected="true" th:text="#{pat.tab.file}">Dossier</button>
+    <button type="button" role="tab" id="tab-visites" aria-controls="onglet-visites" aria-selected="false" tabindex="-1">
+      <span th:text="${isDoctor} ? #{dos.consultations} : #{pat.tab.visits}">Visites</span>
+      <span class="compte-onglet" th:text="${#lists.size(visites)}">0</span></button>
+  </div>
+
+  <div class="onglet-panneau" role="tabpanel" id="onglet-dossier" aria-labelledby="tab-dossier">
+    <div class="grille-2 sans-marge-haut">
+      <div class="carte">
+        <h2 th:text="#{pat.contact}">Coordonnées et état civil</h2>
+        <dl class="champs-lus">
+          <div><dt th:text="#{patient.email}">Email</dt><dd th:text="${patient.email} ?: '—'">—</dd></div>
+          <div><dt th:text="#{pat.profession}">Profession</dt><dd th:text="${patient.profession} ?: '—'">—</dd></div>
+          <div class="large"><dt th:text="#{patient.address}">Adresse</dt><dd th:text="${patient.adresse} ?: '—'">—</dd></div>
+          <div><dt th:text="#{pat.maritalStatus}">Situation familiale</dt><dd th:text="${patient.situationFamiliale != null} ? #{'situation.' + ${patient.situationFamiliale}} : '—'">—</dd></div>
+          <div><dt th:text="#{patient.sex}">Sexe</dt><dd th:text="${patient.sexe != null} ? #{'patient.sex.' + ${patient.sexe}} : '—'">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="pile">
+        <!-- Allergies : visibles par tous, saisies par le médecin dans le dossier médical -->
+        <div class="carte" id="allergies">
+          <h2 th:text="#{dos.allergies}">Allergies</h2>
+          <p class="vide" th:if="${#lists.isEmpty(allergies)}" th:text="#{dos.allergies.none}">Aucune allergie connue.</p>
+          <ul class="puces" th:unless="${#lists.isEmpty(allergies)}">
+            <li th:each="a : ${allergies}" class="texte-alerte" th:text="${a.nom}">Pénicilline</li>
+          </ul>
+        </div>
+        <div class="carte" id="traitement-en-cours" th:if="${isDoctor}">
+          <h2><th:block th:text="#{pat.treatment}">Traitement en cours</th:block> <small th:text="#{pat.treatment.before}">(avant la 1re consultation)</small></h2>
+          <p class="vide" th:if="${#lists.isEmpty(patient.traitementLignes())}" th:text="#{pat.treatment.none}">Aucun traitement indiqué.</p>
+          <ul class="puces" th:unless="${#lists.isEmpty(patient.traitementLignes())}">
+            <li th:each="l : ${patient.traitementLignes()}" th:text="${l}">Médicament</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte bloc-large" id="antecedents" th:if="${isDoctor}">
+      <h2><th:block th:text="#{pat.history}">Antécédents</th:block> <small th:unless="${#lists.isEmpty(antecedents)}" th:text="'(' + ${#lists.size(antecedents)} + ')'">(0)</small></h2>
+      <p class="vide" th:if="${#lists.isEmpty(antecedents)}" th:text="#{dos.history.none}">Aucun antécédent enregistré.</p>
+      <div class="defilement-tableau" th:unless="${#lists.isEmpty(antecedents)}">
+        <table class="tableau compact">
+          <thead><tr><th th:text="#{appointment.date}">Date</th><th th:text="#{dos.col.type}">Type</th><th th:text="#{dos.col.description}">Description</th><th></th></tr></thead>
+          <tbody>
+            <tr th:each="a : ${antecedents}">
+              <td class="heure" th:text="${a.date != null} ? ${#temporals.format(a.date, 'dd/MM/yyyy')} : ''">date</td>
+              <td><span class="pastille" th:text="#{'antecedent.' + ${a.type}}">Médical</span></td>
+              <td><span th:text="${a.description}">description</span>
+                <small class="note" th:if="${a.note != null}" th:text="${a.note}">note</small></td>
+              <td class="droite">
+                <details class="confirmer">
+                  <summary class="bouton petit danger" th:attr="aria-label=#{dos.remove}">✕</summary>
+                  <form th:action="@{/patients/{p}/antecedents/{a}/supprimer(p=${patient.id},a=${a.id})}" method="post">
+                    <button type="submit" class="bouton petit danger" th:text="#{dos.remove}">Retirer</button>
+                  </form>
+                </details>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <form class="ajout-antecedent" method="post" th:action="@{/patients/{p}/antecedents(p=${patient.id})}">
+        <select name="type" th:attr="aria-label=#{dos.history.type}">
+          <option th:each="t : ${typesAntecedent}" th:value="${t}" th:text="#{'antecedent.' + ${t}}">Médical</option>
+        </select>
+        <input type="text" name="description" required maxlength="500" th:placeholder="#{dos.history.example}" th:attr="aria-label=#{dos.col.description}" autocomplete="off">
+        <input type="date" name="date" th:attr="aria-label=#{appointment.date}">
+        <input type="text" name="note" maxlength="500" th:placeholder="#{dos.note.optional}" th:attr="aria-label=#{dos.col.note}" autocomplete="off">
+        <button type="submit" class="bouton petit principal" th:text="#{queue.add.submit}">Ajouter</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="onglet-panneau" role="tabpanel" id="onglet-visites" aria-labelledby="tab-visites" hidden>
+    <div class="carte" id="visites">
+      <p class="vide" th:if="${#lists.isEmpty(visites)}" th:text="#{pat.visits.none}">Aucune visite.</p>
+      <table class="tableau" th:unless="${#lists.isEmpty(visites)}">
+        <thead><tr><th th:text="#{appointment.date}">Date</th><th th:if="${isDoctor}" th:text="#{queue.reason}">Motif</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="v : ${visites}">
+            <td class="heure" th:text="${#temporals.format(v.date, 'dd/MM/yyyy')}">01/01/2026</td>
+            <td th:if="${isDoctor}" th:text="${v.motif} ?: #{dos.noReason}">Motif</td>
+            <td class="droite"><a th:if="${isDoctor}" class="bouton petit"
+                 th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='consultation',c=${v.id})}" th:text="#{pat.open}">Ouvrir</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div id="resultats-globaux" class="resultats-globaux" th:fragment="resultats" role="listbox" th:attr="aria-label=#{nav.search}">
+  <th:block th:if="${q.length() >= 2}">
+    <p class="vide" th:if="${#lists.isEmpty(trouves)}" th:text="#{search.none(${q})}">Aucun patient</p>
+    <a th:each="p : ${trouves}" class="resultat-global" role="option"
+       th:href="${isDoctor} ? @{/patients/{id}/dossier(id=${p.id})} : @{/patients/{id}(id=${p.id})}">
+      <span class="avatar" th:classappend="${p.sexe == 'F'} ? 'f' : 'm'"
+            th:text="${#strings.substring(p.prenom, 0, 1).toUpperCase() + #strings.substring(p.nom, 0, 1).toUpperCase()}">AB</span>
+      <span class="ligne-texte"><strong th:text="${p.nom.toUpperCase() + ' ' + p.prenom}">Patient</strong>
+        <small th:text="'N° ' + ${p.numero} + (${p.age() != null} ? ' · ' + ${p.age()} + ' ' + #{search.years} : '') + (${#strings.isEmpty(p.telephone)} ? '' : ' · ' + ${p.telephone})">dossier</small></span>
+    </a>
+    <a class="resultat-global tous" th:if="${!#lists.isEmpty(trouves)}" th:href="@{/patients(q=${q})}"
+       th:text="${autres} ? #{search.all} : #{search.list}">Voir tous</a>
+  </th:block>
+</div>
+</body>
+</html>

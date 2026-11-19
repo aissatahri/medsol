@@ -1,0 +1,20 @@
+[
+  {"id": "01-accueil", "titre": "", "sous_titre": "",
+   "texte": "Vous êtes médecin au Maroc ? Votre cabinet mérite un outil à la hauteur de votre pratique. Voici MedSol."},
+  {"id": "02-tableau", "titre": "Tableau de bord", "sous_titre": "Rendez-vous, salle d'attente, patients",
+   "texte": "Dès l'ouverture, MedSol vous montre l'essentiel : les rendez-vous du jour, la salle d'attente, et les patients qui vous attendent."},
+  {"id": "03-dossier", "titre": "Dossier patient", "sous_titre": "Adapté à votre spécialité",
+   "texte": "Chaque dossier rassemble les antécédents, les allergies, les constantes et toutes les consultations, adaptés à votre spécialité, parmi vingt-deux."},
+  {"id": "04-ordonnance", "titre": "Ordonnances", "sous_titre": "Plus de 6 000 médicaments marocains",
+   "texte": "Rédigez une ordonnance en quelques secondes, à partir de plus de six mille médicaments du marché marocain. MedSol vous alerte en cas d'allergie ou d'interaction."},
+  {"id": "05-impression", "titre": "Vos ordonnanciers", "sous_titre": "Mise en page réglée au millimètre",
+   "texte": "Vos documents s'impriment directement sur vos ordonnanciers préimprimés : la police, les tailles et la position de chaque élément se règlent au millimètre."},
+  {"id": "06-agenda", "titre": "Agenda et rendez-vous en ligne", "sous_titre": "Rappels automatiques la veille",
+   "texte": "L'agenda se partage avec votre assistante. Vos patients réservent en ligne depuis votre page, et reçoivent un rappel automatique la veille du rendez-vous."},
+  {"id": "07-caisse", "titre": "Caisse et factures", "sous_titre": "Mentions fiscales marocaines",
+   "texte": "La caisse suit chaque règlement, et vos factures portent les mentions fiscales marocaines, avec le montant en lettres."},
+  {"id": "08-securite", "titre": "Sécurité", "sous_titre": "Chiffrement, sauvegardes, double authentification",
+   "texte": "Vos données sont chiffrées, sauvegardées chaque nuit dans un second centre de données, et accessibles en toute sécurité sur ordinateur, tablette et téléphone."},
+  {"id": "09-fin", "titre": "30 jours d'essai gratuit", "sous_titre": "med.appsol.app",
+   "texte": "Essayez MedSol gratuitement pendant trente jours, sans carte bancaire. Rendez-vous sur med point appsol point app."}
+]

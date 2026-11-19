@@ -1,0 +1,38 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="#{twofa.title} + ' - MedSol'">Double authentification - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <script th:src="@{/js/code-2fa.js}" defer></script>
+</head>
+<!-- Deuxième étape de la connexion : code à 6 chiffres de l'application d'authentification -->
+<body class="page-connexion">
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+  <aside th:replace="~{fragments/public :: vitrine}"></aside>
+  <main class="connexion-panneau">
+    <div class="connexion-boite">
+      <h1 th:text="#{twofa.title}">Double authentification</h1>
+      <p class="sous-titre" th:text="#{twofa.subtitle}">Saisissez le code à 6 chiffres affiché par votre application d'authentification.</p>
+      <p class="alerte erreur" th:if="${param.erreur}" role="alert" th:text="#{account.2fa.badcode}">Code incorrect.</p>
+      <p class="alerte erreur" th:if="${param.trop}" role="alert" th:text="#{limit.blocked}">Trop de tentatives.</p>
+      <form th:action="@{/2fa}" method="post" class="formulaire">
+        <label><span th:text="#{twofa.code}">Code</span>
+          <input name="code" id="code-2fa" class="code-2fa" maxlength="12" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required autofocus
+                 data-cases th:attr="data-chiffre=#{twofa.digit},data-groupe=#{twofa.subtitle}"></label>
+        <button type="button" class="bouton-discret lien-secours" data-secours-pour="code-2fa" hidden
+                th:attr="data-secours=#{twofa.useBackup},data-application=#{twofa.useApp}" th:text="#{twofa.useBackup}">Utiliser un code de secours</button>
+        <small class="note" th:text="#{twofa.backup}">Téléphone indisponible ? Saisissez l'un de vos codes de secours (ABCDE-FGHJK).</small>
+        <button type="submit" class="bouton principal large" th:text="#{twofa.submit}">Valider</button>
+      </form>
+      <form th:action="@{/logout}" method="post" class="connexion-note">
+        <button type="submit" class="bouton-discret" th:text="#{twofa.cancel}">Annuler et se déconnecter</button>
+      </form>
+      <p class="connexion-note" th:text="#{twofa.lost}">Téléphone perdu ? Le médecin du cabinet (ou le support MedSol pour un médecin) peut désactiver la double authentification.</p>
+    </div>
+  </main>
+</body>
+</html>

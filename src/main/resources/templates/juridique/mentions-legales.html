@@ -1,0 +1,28 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head><th:block th:replace="~{juridique/commun :: tete('Mentions légales')}"></th:block></head>
+<body class="page-texte">
+<main class="texte-legal">
+  <p><a th:href="@{/}">‹ MedSol</a></p>
+  <h1>Mentions légales</h1>
+
+  <h2>Éditeur</h2>
+  <p th:replace="~{juridique/commun :: editeur}"></p>
+  <p>Directeur de la publication : <span th:text="${editeurNom}">MedSol</span>.</p>
+
+  <h2>Hébergement</h2>
+  <p><strong>Hetzner Online GmbH</strong><br>Industriestr. 25, 91710 Gunzenhausen, Allemagne<br>
+    Centres de données situés dans l'Union européenne.</p>
+
+  <h2>Propriété intellectuelle</h2>
+  <p>Le logiciel MedSol, son interface et ses contenus sont protégés. Toute reproduction ou réutilisation sans
+    autorisation de l'éditeur est interdite. Les données saisies par les cabinets restent leur propriété.</p>
+
+  <h2>Données personnelles</h2>
+  <p>Voir la <a th:href="@{/confidentialite}">politique de confidentialité</a> et l'<a th:href="@{/sous-traitance}">accord
+    de traitement des données</a>.</p>
+
+  <nav th:replace="~{juridique/commun :: pied}"></nav>
+</main>
+</body>
+</html>

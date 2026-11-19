@@ -1,0 +1,62 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head><th:block th:replace="~{juridique/commun :: tete('Politique de confidentialité')}"></th:block></head>
+<body class="page-texte">
+<main class="texte-legal">
+  <p><a th:href="@{/}">‹ MedSol</a></p>
+  <h1>Politique de confidentialité</h1>
+  <p class="note">Version du <span th:text="${version}">2026-11-17</span>.</p>
+
+  <h2>1. Qui sommes-nous ?</h2>
+  <p>MedSol est un logiciel en ligne de gestion de cabinet médical, édité par :</p>
+  <p th:replace="~{juridique/commun :: editeur}"></p>
+
+  <h2>2. Les données des patients</h2>
+  <p>Les dossiers des patients sont saisis et gérés par leur médecin, qui est responsable de ces données. MedSol les
+    traite uniquement pour son compte, comme sous-traitant, selon l'<a th:href="@{/sous-traitance}">accord de traitement
+    des données</a> conclu avec chaque cabinet. MedSol ne les utilise à aucune autre fin et ne les vend jamais.</p>
+  <p><strong>Vous êtes patient ?</strong> Pour consulter, corriger ou faire supprimer les données vous concernant,
+    adressez-vous à votre médecin : il dispose dans MedSol des outils pour répondre à votre demande.</p>
+
+  <h2>3. Les demandes de rendez-vous en ligne</h2>
+  <p>Quand vous demandez un rendez-vous sur la page d'un cabinet, votre nom, votre téléphone, votre e-mail (facultatif)
+    et le motif que vous indiquez sont transmis à ce cabinet, qui traite votre demande. Votre adresse IP est enregistrée
+    avec la demande pour limiter les abus (demandes en série). Un e-mail de confirmation, contenant un lien
+    d'annulation, vous est envoyé si vous avez donné votre adresse.</p>
+
+  <h2>4. Les comptes des médecins et de leurs collaborateurs</h2>
+  <ul>
+    <li><strong>Données :</strong> nom, adresse e-mail, mot de passe (enregistré sous forme hachée, jamais lisible),
+      langue, rôle et droits, informations du cabinet (adresse, téléphone, identifiants professionnels et fiscaux),
+      historique des abonnements et des paiements, journal des connexions et des accès aux dossiers.</li>
+    <li><strong>Finalités :</strong> fournir le service, en assurer la sécurité (détection des tentatives de connexion
+      abusives, traçabilité des accès), gérer l'abonnement et la facturation, envoyer les messages liés au service.</li>
+    <li><strong>Durée :</strong> pendant l'utilisation du service ; les factures sont conservées pendant la durée légale
+      de conservation des documents comptables.</li>
+  </ul>
+
+  <h2>5. Cookies</h2>
+  <p>MedSol n'utilise que des cookies techniques indispensables : la session de connexion et la langue choisie. Aucun
+    cookie publicitaire, aucun outil de mesure d'audience, aucun traceur tiers.</p>
+
+  <h2>6. Destinataires et hébergement</h2>
+  <p>Les données sont hébergées dans l'Union européenne par Hetzner Online GmbH (Allemagne et Finlande). Les e-mails du
+    service sont envoyés par Brevo (France) ; ils ne mentionnent jamais de donnée médicale. Aucune donnée n'est vendue ni
+    cédée à des tiers.</p>
+
+  <h2>7. Sécurité</h2>
+  <p>Échanges chiffrés (HTTPS), cloisonnement des données de chaque cabinet, double authentification des médecins,
+    journal des accès, sauvegardes quotidiennes chiffrées copiées dans un second centre de données. Le détail figure dans
+    l'<a th:href="@{/sous-traitance}">accord de traitement des données</a>.</p>
+
+  <h2>8. Vos droits</h2>
+  <p>Conformément à la loi n° 09-08, vous disposez d'un droit d'accès, de rectification et d'opposition, pour des motifs
+    légitimes, au traitement de vos données. Pour les données de votre compte MedSol, écrivez à l'éditeur
+    <th:block th:if="${!#strings.isEmpty(editeur.email)}">(<span th:text="${editeur.email}"></span>)</th:block> ; pour
+    votre dossier médical, adressez-vous à votre médecin. Vous pouvez également saisir la Commission nationale de contrôle
+    de la protection des données à caractère personnel (CNDP).</p>
+
+  <nav th:replace="~{juridique/commun :: pied}"></nav>
+</main>
+</body>
+</html>

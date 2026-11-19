@@ -1,0 +1,109 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head><th:block th:replace="~{juridique/commun :: tete('Accord de traitement des données')}"></th:block></head>
+<body class="page-texte">
+<!-- Accord de sous-traitance (loi n° 09-08) accepté électroniquement par le médecin titulaire. Changer
+     RegistrationService.CGU_VERSION à chaque modification : les médecins l'acceptent à nouveau. -->
+<main class="texte-legal">
+  <p><a th:href="@{/}">‹ MedSol</a></p>
+  <h1>Accord de traitement des données (sous-traitance)</h1>
+  <p class="note">Version du <span th:text="${version}">2026-11-17</span>. Annexe aux conditions générales d'utilisation
+    et de vente de MedSol.</p>
+
+  <h2>1. Parties</h2>
+  <p><strong>Le responsable du traitement</strong> est le médecin titulaire du cabinet inscrit sur MedSol (ci-après
+    « le Cabinet »), qui accepte le présent accord en son nom lors de l'inscription ou de sa connexion.</p>
+  <p><strong>Le sous-traitant</strong> est l'éditeur de MedSol (ci-après « l'Éditeur ») :</p>
+  <p th:replace="~{juridique/commun :: editeur}"></p>
+  <p>Le présent accord fixe les engagements de l'Éditeur lorsqu'il traite, pour le compte du Cabinet, des données à
+    caractère personnel au sens de la loi n° 09-08 relative à la protection des personnes physiques à l'égard du
+    traitement des données à caractère personnel.</p>
+
+  <h2>2. Description du traitement</h2>
+  <ul>
+    <li><strong>Finalités :</strong> tenue du dossier des patients et des consultations, prescriptions et documents
+      médicaux, gestion des rendez-vous (y compris la prise de rendez-vous en ligne et les rappels), encaissements et
+      facturation, statistiques du cabinet.</li>
+    <li><strong>Personnes concernées :</strong> patients du Cabinet, personnes qui demandent un rendez-vous en ligne,
+      médecin et collaborateurs du Cabinet.</li>
+    <li><strong>Données :</strong> identité et coordonnées ; données de santé (antécédents, allergies, constantes,
+      consultations, prescriptions, examens, documents) ; données administratives et de paiement.</li>
+    <li><strong>Durée :</strong> pendant toute la durée d'utilisation de MedSol par le Cabinet, puis jusqu'à la
+      restitution et à la suppression prévues à l'article 10.</li>
+  </ul>
+
+  <h2>3. Instructions du Cabinet</h2>
+  <p>L'Éditeur ne traite les données que pour fournir le service et selon les instructions du Cabinet ; l'utilisation
+    des fonctions de MedSol par le Cabinet vaut instruction. L'Éditeur n'utilise les données à aucune autre fin : ni
+    revente, ni publicité, ni profilage, ni exploitation statistique nominative. Il informe le Cabinet si une instruction
+    lui paraît contraire à la loi.</p>
+
+  <h2>4. Confidentialité et secret médical</h2>
+  <p>Les personnes autorisées par l'Éditeur à intervenir sur le service sont tenues à la confidentialité. L'Éditeur ne
+    consulte pas les dossiers médicaux ; un accès exceptionnel n'a lieu qu'à la demande expresse du Cabinet, pour
+    résoudre un problème qu'il a signalé, et dans la stricte mesure nécessaire.</p>
+
+  <h2>5. Sécurité</h2>
+  <p>L'Éditeur met en œuvre et maintient des mesures techniques et organisationnelles adaptées au caractère sensible des
+    données de santé, notamment :</p>
+  <ul>
+    <li>chiffrement des échanges (HTTPS) ;</li>
+    <li>cloisonnement strict des données de chaque cabinet au niveau de la base de données ;</li>
+    <li>mots de passe protégés par hachage, verrouillage après plusieurs échecs, fermeture automatique des sessions
+      inactives, double authentification obligatoire pour les médecins ;</li>
+    <li>journal des accès aux dossiers, consultable par le Cabinet ;</li>
+    <li>sauvegarde quotidienne chiffrée, testée par une restauration automatique et copiée dans un second centre de
+      données ;</li>
+    <li>serveurs dédiés, pare-feu, mises à jour de sécurité régulières.</li>
+  </ul>
+  <p>Le Cabinet reste responsable de la sécurité de ses propres postes et téléphones, de la confidentialité des
+    identifiants de son équipe et de la gestion des droits de ses collaborateurs.</p>
+
+  <h2>6. Sous-traitants ultérieurs</h2>
+  <p>Le Cabinet autorise l'Éditeur à recourir aux prestataires suivants, liés par des obligations de sécurité et de
+    confidentialité équivalentes :</p>
+  <ul>
+    <li><strong>Hetzner Online GmbH</strong> (Allemagne) : hébergement des serveurs et des sauvegardes, dans des centres de
+      données situés dans l'Union européenne (Allemagne, Finlande) ;</li>
+    <li><strong>Brevo (Sendinblue SAS)</strong> (France) : envoi des e-mails du service (mots de passe, invitations,
+      confirmations et rappels de rendez-vous). Ces e-mails se limitent au nom du cabinet, à la date et à l'heure : ils ne
+      mentionnent jamais le motif de consultation ni aucune donnée médicale.</li>
+  </ul>
+  <p>L'Éditeur informe le Cabinet de tout ajout ou remplacement de prestataire avant sa mise en œuvre ; le Cabinet peut
+    s'y opposer en mettant fin à son abonnement.</p>
+
+  <h2>7. Localisation et transfert des données</h2>
+  <p>Les données sont hébergées dans l'Union européenne. Le Cabinet, responsable du traitement, accomplit auprès de la
+    Commission nationale de contrôle de la protection des données à caractère personnel (CNDP) les formalités relatives
+    à ses traitements et au transfert de ces données hors du Maroc ; l'Éditeur lui fournit sur demande les informations
+    techniques nécessaires (description du service, mesures de sécurité, localisation).</p>
+
+  <h2>8. Droits des personnes</h2>
+  <p>Le Cabinet répond aux demandes de ses patients (accès, rectification, opposition). MedSol lui en donne les moyens,
+    notamment l'export complet du dossier d'un patient. L'Éditeur transmet sans délai au Cabinet toute demande qu'il
+    recevrait directement et l'assiste si nécessaire.</p>
+
+  <h2>9. Violation de données</h2>
+  <p>L'Éditeur notifie au Cabinet toute violation de sécurité affectant ses données dans les meilleurs délais, et au plus
+    tard 72 heures après en avoir pris connaissance, avec les informations utiles : nature de l'incident, données et
+    personnes concernées, conséquences probables, mesures prises ou proposées.</p>
+
+  <h2>10. Fin du service, restitution et suppression</h2>
+  <p>Le Cabinet peut exporter ses données à tout moment. Après la fin de son utilisation de MedSol, et sur sa demande
+    écrite, l'Éditeur supprime définitivement les données du Cabinet dans un délai de 90 jours ; les copies présentes dans
+    les sauvegardes disparaissent à l'expiration de leur durée de conservation (30 jours). L'Éditeur confirme la
+    suppression par écrit sur demande.</p>
+
+  <h2>11. Assistance et vérifications</h2>
+  <p>L'Éditeur met à la disposition du Cabinet les informations nécessaires pour démontrer le respect du présent accord
+    et répond à ses questions relatives à la protection des données. Toute vérification complémentaire est organisée
+    d'un commun accord, avec un préavis raisonnable.</p>
+
+  <h2>12. Durée et ordre de priorité</h2>
+  <p>Le présent accord s'applique tant que l'Éditeur traite des données pour le compte du Cabinet. En matière de
+    protection des données, il prévaut sur les conditions générales. Il est soumis au droit marocain.</p>
+
+  <nav th:replace="~{juridique/commun :: pied}"></nav>
+</main>
+</body>
+</html>

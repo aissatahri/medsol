@@ -1,0 +1,80 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head><th:block th:replace="~{juridique/commun :: tete('Conditions générales')}"></th:block></head>
+<body class="page-texte">
+<!-- Conditions générales d'utilisation et de vente (en français : marché marocain), acceptées avec l'accord de
+     traitement des données ; changer RegistrationService.CGU_VERSION à chaque modification du texte. -->
+<main class="texte-legal">
+  <p><a th:href="@{/}">‹ MedSol</a></p>
+  <h1>Conditions générales d'utilisation et de vente de MedSol</h1>
+  <p class="note">Version du <span th:text="${version}">2026-11-17</span>.</p>
+
+  <h2>1. Objet</h2>
+  <p>Les présentes conditions régissent l'utilisation du logiciel en ligne MedSol (gestion de cabinet médical : patients,
+    rendez-vous, consultations, ordonnances, documents, caisse) par les médecins et leurs collaborateurs, ainsi que les
+    conditions de l'abonnement. Elles sont complétées par l'<a th:href="@{/sous-traitance}">accord de traitement des
+    données</a>, qui en fait partie intégrante. L'inscription vaut acceptation de ces deux documents.</p>
+
+  <h2>2. Éditeur</h2>
+  <p th:replace="~{juridique/commun :: editeur}"></p>
+
+  <h2>3. Inscription et comptes</h2>
+  <p>Le cabinet est ouvert par le médecin titulaire, qui garantit l'exactitude des informations fournies et la qualité
+    de médecin autorisé à exercer. Il crée et gère les comptes de ses collaborateurs et reste responsable de leur
+    utilisation. Les identifiants sont personnels et confidentiels. La double authentification est obligatoire pour les
+    médecins.</p>
+
+  <h2>4. Essai, abonnement et paiement</h2>
+  <p>Chaque nouveau cabinet bénéficie d'un essai gratuit de 30 jours, sans engagement. L'abonnement est ensuite mensuel ou
+    annuel, au tarif affiché dans la page « Abonnement » au moment du paiement. Le paiement se fait d'avance, selon les
+    modalités indiquées dans cette page (virement, versement ou carte bancaire lorsqu'elle est proposée). Une facture
+    est mise à disposition pour chaque paiement.</p>
+  <p>À défaut de paiement à l'échéance, le cabinet passe en lecture seule : les données restent consultables et
+    exportables, mais aucune nouvelle saisie n'est possible jusqu'au paiement. Aucune donnée n'est supprimée du fait
+    d'un retard de paiement.</p>
+
+  <h2>5. Durée, résiliation et restitution des données</h2>
+  <p>Le médecin peut cesser d'utiliser MedSol à tout moment ; l'abonnement en cours n'est pas remboursé. Avant ou après
+    la résiliation, il peut exporter les dossiers de ses patients (fonction « Exporter le dossier »). À sa demande écrite,
+    les données du cabinet sont supprimées définitivement, sauvegardes comprises, dans un délai de 90 jours.</p>
+
+  <h2>6. Données personnelles et données de santé</h2>
+  <p>Le médecin est responsable du traitement des données de ses patients au sens de la loi n° 09-08 relative à la
+    protection des personnes physiques à l'égard du traitement des données à caractère personnel. Il lui appartient
+    d'accomplir les formalités auprès de la CNDP et d'informer ses patients. L'éditeur agit comme sous-traitant : il
+    héberge et traite ces données uniquement pour fournir le service, selon les instructions du médecin, et ne les
+    utilise à aucune autre fin (ni revente, ni publicité, ni exploitation statistique nominative). Un contrat de
+    sous-traitance précise ces engagements : l'<a th:href="@{/sous-traitance}">accord de traitement des données</a>,
+    accepté par le médecin avec les présentes conditions.</p>
+  <p>Les données sont hébergées dans l'Union européenne (centre de données Hetzner en Allemagne), chiffrées lors des
+    échanges (HTTPS), cloisonnées par cabinet, sauvegardées chaque jour sous forme chiffrée. L'accès de l'éditeur aux
+    dossiers médicaux est exclu, sauf demande expresse du médecin pour une intervention de support. Toute violation de
+    données affectant le cabinet lui est notifiée dans les meilleurs délais.</p>
+
+  <h2>7. Disponibilité et support</h2>
+  <p>L'éditeur met en œuvre les moyens raisonnables pour assurer la disponibilité et la sécurité du service (obligation
+    de moyens). Des interruptions peuvent survenir pour maintenance ou en cas d'incident ; elles sont réduites au
+    minimum. Le support est assuré par e-mail ou téléphone aux heures ouvrables.</p>
+
+  <h2>8. Responsabilité</h2>
+  <p>MedSol est un outil d'aide à la gestion du cabinet. Les alertes de prescription, modèles et calculs sont fournis à
+    titre d'aide et ne remplacent pas le jugement du médecin, qui demeure seul responsable de ses diagnostics, de ses
+    prescriptions et des documents qu'il signe. La responsabilité de l'éditeur, si elle était retenue, est limitée au
+    montant des sommes payées par le cabinet au cours des douze derniers mois.</p>
+
+  <h2>9. Propriété intellectuelle</h2>
+  <p>Le logiciel MedSol reste la propriété de l'éditeur ; l'abonnement donne un droit d'utilisation personnel et non
+    cessible. Les données saisies restent la propriété du cabinet.</p>
+
+  <h2>10. Modification des conditions</h2>
+  <p>L'éditeur peut faire évoluer ces conditions ; les cabinets sont informés de toute modification importante au
+    moins 30 jours avant son entrée en vigueur.</p>
+
+  <h2>11. Droit applicable</h2>
+  <p>Les présentes conditions sont soumises au droit marocain. À défaut d'accord amiable, tout litige relève des
+    tribunaux compétents du ressort du siège de l'éditeur.</p>
+
+  <nav th:replace="~{juridique/commun :: pied}"></nav>
+</main>
+</body>
+</html>

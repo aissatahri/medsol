@@ -1,0 +1,78 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="(${patientId == null} ? #{patient.new} : #{pat.form.edit}) + ' - MedSol'">Patient</title></head>
+<body>
+<!-- Formulaire patient repris de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="${patientId == null} ? @{/patients} : @{/patients/{id}(id=${patientId})}" th:text="#{pat.back}">‹ Retour</a>
+      <h1 th:text="${patientId == null} ? #{patient.new} : #{pat.form.edit}">Patient</h1>
+    </div>
+  </header>
+
+  <form class="carte formulaire-patient" method="post" th:object="${form}"
+        th:action="${patientId == null} ? @{/patients} : @{/patients/{id}(id=${patientId})}">
+    <div th:if="${#fields.hasErrors('*')}" class="alerte erreur" role="alert">
+      <p class="sans-marge" th:text="#{pat.form.errors}">Vérifiez les champs signalés.</p>
+    </div>
+    <div th:unless="${#lists.isEmpty(semblables)}" class="alerte erreur doublons" role="alert">
+      <strong th:text="#{pat.form.duplicate}">Ce patient existe peut-être déjà :</strong>
+      <ul>
+        <li th:each="p : ${semblables}">
+          <a th:href="@{/patients/{id}(id=${p.id})}" target="_blank" rel="noopener" th:text="${p.nomComplet()}">Patient</a>
+          <span th:text="' · ' + #{bin.record(${'' + p.numero})} + (${p.identifiantNational != null} ? ' · ' + ${p.identifiantNational} : '')
+                + (${p.dateNaissance != null} ? ' · ' + #{pat.form.born(${#temporals.format(p.dateNaissance, 'dd/MM/yyyy')})} : '')"></span>
+        </li>
+      </ul>
+      <label class="forcer"><input type="checkbox" name="ignorerDoublon" value="true"> <th:block th:text="#{pat.form.notSame}">Ce n’est pas la même personne : enregistrer quand même</th:block></label>
+    </div>
+
+    <div class="grille-formulaire">
+      <label><th:block th:text="#{patient.lastname} + ' *'">Nom *</th:block> <input type="text" th:field="*{nom}" required maxlength="100" autocomplete="off" autofocus>
+        <span class="erreur-champ" th:errors="*{nom}"></span></label>
+      <label><th:block th:text="#{patient.firstname} + ' *'">Prénom *</th:block> <input type="text" th:field="*{prenom}" required maxlength="100" autocomplete="off">
+        <span class="erreur-champ" th:errors="*{prenom}"></span></label>
+      <fieldset class="choix-sexe"><legend th:text="#{patient.sex} + ' *'">Sexe *</legend>
+        <label><input type="radio" name="sexe" value="F" required th:checked="*{sexe == 'F'}"> <th:block th:text="#{patient.sex.F}">Féminin</th:block></label>
+        <label><input type="radio" name="sexe" value="M" th:checked="*{sexe == 'M'}"> <th:block th:text="#{patient.sex.M}">Masculin</th:block></label>
+      </fieldset>
+      <label><th:block th:text="#{patient.birthdate}">Date de naissance</th:block> <input type="date" th:field="*{dateNaissance}">
+        <span class="erreur-champ" th:errors="*{dateNaissance}"></span></label>
+      <label><th:block th:text="#{pat.form.nationalId}">Identifiant national (CIN, NIR…)</th:block> <input type="text" th:field="*{identifiantNational}" maxlength="50" autocomplete="off"></label>
+      <label><th:block th:text="#{patient.phone}">Téléphone</th:block> <input type="tel" th:field="*{telephone}" maxlength="30" autocomplete="off">
+        <span class="erreur-champ" th:errors="*{telephone}"></span></label>
+      <label><th:block th:text="#{patient.email}">Email</th:block> <input type="email" th:field="*{email}" maxlength="200" autocomplete="off">
+        <span class="erreur-champ" th:errors="*{email}"></span></label>
+      <label><th:block th:text="#{pat.maritalStatus}">Situation familiale</th:block>
+        <select th:field="*{situationFamiliale}">
+          <option value="">—</option>
+          <option value="CELIBATAIRE" th:text="#{situation.CELIBATAIRE}">Célibataire</option>
+          <option value="MARIE" th:text="#{situation.MARIE}">Marié(e)</option>
+          <option value="DIVORCE" th:text="#{situation.DIVORCE}">Divorcé(e)</option>
+          <option value="VEUF" th:text="#{situation.VEUF}">Veuf / veuve</option>
+        </select>
+      </label>
+      <label><th:block th:text="#{pat.profession}">Profession</th:block> <input type="text" th:field="*{profession}" maxlength="100" autocomplete="off"></label>
+      <label><th:block th:text="#{pat.form.coverage}">Couverture sanitaire</th:block>
+        <input type="text" th:field="*{couverture}" maxlength="100" list="couvertures" autocomplete="off" th:placeholder="#{cov.field.ph}">
+        <datalist id="couvertures"><option th:each="c : ${couvertures}" th:value="${c}"></option></datalist>
+        <small class="note" th:text="#{cov.field.help}">Choisissez dans la liste ou tapez une autre couverture.</small>
+      </label>
+      <label class="large"><th:block th:text="#{patient.address}">Adresse</th:block> <input type="text" th:field="*{adresse}" maxlength="300" autocomplete="off"></label>
+      <label class="large" th:if="${isDoctor}"><th:block th:text="#{pat.treatment} + ' ' + #{pat.treatment.before}">Traitement en cours (avant la 1re consultation)</th:block>
+        <textarea th:field="*{traitementAvant}" rows="3" maxlength="2000" th:placeholder="#{pat.form.treatment.hint}"></textarea>
+      </label>
+    </div>
+    <label class="forcer" th:if="${patientId == null}">
+      <input type="checkbox" name="consentement" value="true" th:checked="*{consentement}">
+      <th:block th:text="#{pat.form.consent}">Le patient a été informé et consent au traitement de ses données de santé.</th:block></label>
+    <p class="sous-titre" th:if="${patientId == null}" th:text="#{pat.form.numberAuto}">Le numéro de dossier est attribué automatiquement.</p>
+    <div class="actions">
+      <button type="submit" class="bouton principal" th:text="${patientId == null} ? #{pat.form.create} : #{save}">Enregistrer</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>

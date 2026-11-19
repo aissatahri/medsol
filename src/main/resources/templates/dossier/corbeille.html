@@ -1,0 +1,44 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="#{bin.title} + ' - MedSol'">Corbeille des consultations - MedSol</title></head>
+<body>
+<!-- Corbeille reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="@{/patients}" th:text="'‹ ' + #{nav.patients}">‹ Patients</a>
+      <h1 th:text="#{bin.title}">Corbeille des consultations</h1>
+      <p class="sous-titre" th:text="#{bin.subtitle}">Consultations supprimées avec leur contenu.</p>
+    </div>
+  </header>
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Succès</p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <div class="carte">
+    <p class="vide" th:if="${#lists.isEmpty(elements)}" th:text="#{bin.empty}">La corbeille est vide.</p>
+    <div class="defilement-tableau" th:unless="${#lists.isEmpty(elements)}">
+      <table class="tableau">
+        <thead><tr><th th:text="#{bin.col.date}">Consultation du</th><th th:text="#{patient.name}">Patient</th><th th:text="#{bin.col.content}">Contenu</th><th th:text="#{bin.col.deleted}">Supprimée</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="e : ${elements}">
+            <td><strong th:text="${#temporals.format(e.date, 'dd/MM/yyyy')}">date</strong></td>
+            <td><a th:href="@{/patients/{p}/dossier(p=${e.patientId})}" th:text="${e.patient}">Patient</a>
+              <small class="note" th:text="#{bin.record(${'' + e.dossier})}">Dossier</small></td>
+            <td><span th:text="${#strings.isEmpty(e.resume)} ? #{bin.content.default} : ${e.resume}">2 actes</span>
+              <small class="note" th:if="${e.motif != null}" th:text="#{bin.reason(${e.motif})}">Motif</small></td>
+            <td><span th:text="${#temporals.format(e.le.atZone(cab.zone), 'dd/MM/yyyy HH:mm')}">quand</span>
+              <small class="note" th:if="${e.par != null}" th:text="#{bin.by(${e.par})}">par</small></td>
+            <td class="droite">
+              <form th:action="@{/consultations/corbeille/{k}/retablir(k=${e.id})}" method="post">
+                <button type="submit" class="bouton petit principal" th:text="#{bin.restore}">Rétablir</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,87 @@
+# MedSol en production sur un serveur : base, application, HTTPS automatique, sauvegardes chiffrées.
+# Préparer le fichier .env (copie de .env.example), puis : docker compose up -d --build
+# Détails : DEPLOIEMENT.md
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medsol_db
+      POSTGRES_USER: medsol
+      POSTGRES_PASSWORD: ${MEDSOL_DB_PASSWORD:?MEDSOL_DB_PASSWORD manquant dans .env}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsol -d medsol_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # jamais exposée hors du réseau Docker
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MEDSOL_DB_URL: jdbc:postgresql://db:5432/medsol_db
+      MEDSOL_DB_USER: medsol
+      MEDSOL_DB_PASSWORD: ${MEDSOL_DB_PASSWORD}
+      MEDSOL_ENCRYPTION_KEY: ${MEDSOL_ENCRYPTION_KEY:?MEDSOL_ENCRYPTION_KEY manquante dans .env}
+      MEDSOL_BASE_URL: https://${MEDSOL_DOMAINE:?MEDSOL_DOMAINE manquant dans .env}
+      MEDSOL_PLATFORM_ADMINS: ${MEDSOL_PLATFORM_ADMINS:-}
+      MEDSOL_REQUIRE_2FA_DOCTORS: ${MEDSOL_REQUIRE_2FA_DOCTORS:-false}
+      MEDSOL_MAIL_HOST: ${MEDSOL_MAIL_HOST:-}
+      MEDSOL_MAIL_PORT: ${MEDSOL_MAIL_PORT:-587}
+      MEDSOL_MAIL_USER: ${MEDSOL_MAIL_USER:-}
+      MEDSOL_MAIL_PASSWORD: ${MEDSOL_MAIL_PASSWORD:-}
+      MEDSOL_MAIL_FROM: ${MEDSOL_MAIL_FROM:-}
+      MEDSOL_STRIPE_SECRET_KEY: ${MEDSOL_STRIPE_SECRET_KEY:-}
+      MEDSOL_STRIPE_WEBHOOK_SECRET: ${MEDSOL_STRIPE_WEBHOOK_SECRET:-}
+      MEDSOL_BILLING_INSTRUCTIONS: ${MEDSOL_BILLING_INSTRUCTIONS:-}
+    # pas de port publié : seul le proxy HTTPS (qui remplace X-Forwarded-For) parle à l'application
+    expose:
+      - "8080"
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      MEDSOL_DOMAINE: ${MEDSOL_DOMAINE}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  sauvegarde:
+    build: ./docker/sauvegarde
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: medsol
+      PGPASSWORD: ${MEDSOL_DB_PASSWORD}
+      PGDATABASE: medsol_db
+      MEDSOL_BACKUP_PASSPHRASE: ${MEDSOL_BACKUP_PASSPHRASE:?MEDSOL_BACKUP_PASSPHRASE manquante dans .env}
+      MEDSOL_BACKUP_HOUR: ${MEDSOL_BACKUP_HOUR:-02}
+      MEDSOL_BACKUP_DAYS: ${MEDSOL_BACKUP_DAYS:-30}
+      MEDSOL_BACKUP_TEST: ${MEDSOL_BACKUP_TEST:-true}
+      MEDSOL_BACKUP_COPY_CMD: ${MEDSOL_BACKUP_COPY_CMD:-}   # $FICHIER : fichier à copier
+      TZ: ${MEDSOL_TZ:-UTC}
+    volumes:
+      - ${MEDSOL_BACKUP_DIR:-./sauvegardes}:/sauvegardes
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

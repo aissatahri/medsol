@@ -1,0 +1,69 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{nav.settings}">Paramètres</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page"><div><h1 th:text="#{nav.settings}">Paramètres</h1></div></header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('cabinet')}"></nav>
+    <div class="carte parametres-section ancien">
+    <p class="error" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+    <p class="ok" role="status" th:if="${done}" th:text="#{${done}}"></p>
+    <form th:action="@{/settings/cabinet}" method="post" class="card form">
+        <p class="muted" th:text="#{settings.cabinet.help}">Ces informations figurent en en-tête des documents.</p>
+        <label for="nom" th:text="#{register.cabinet}">Nom</label>
+        <input id="nom" name="nom" th:value="${cabinet.nom}" required maxlength="150">
+        <label for="adresse" th:text="#{patient.address}">Adresse</label>
+        <input id="adresse" name="adresse" th:value="${cabinet.adresse}" maxlength="300">
+        <label for="telephone" th:text="#{patient.phone}">Téléphone</label>
+        <input id="telephone" name="telephone" th:value="${cabinet.telephone}" maxlength="40">
+        <label for="ville" th:text="#{settings.city}">Ville</label>
+        <input id="ville" name="ville" th:value="${cabinet.ville}" th:placeholder="${villeProposee}" maxlength="80">
+        <small class="muted" th:text="#{settings.city.help}">Imprimée dans « Fait à …, le … ».</small>
+        <label for="numeroOrdre" th:text="#{settings.licence}">N° d'ordre / licence</label>
+        <input id="numeroOrdre" name="numeroOrdre" th:value="${cabinet.numeroOrdre}" maxlength="60">
+        <label for="identifiant" th:text="${cabinet.maroc()} ? 'INPE' : #{settings.identifier}">Identifiant professionnel</label>
+        <input id="identifiant" name="identifiant" th:value="${cabinet.identifiantProfessionnel}" maxlength="60">
+        <fieldset class="droits champs-fiscaux"th:if="${cabinet.maroc()}">
+          <legend th:text="#{settings.tax.title}">Identifiants fiscaux (factures)</legend>
+          <label for="identifiantFiscal" th:text="#{settings.tax.if}">Identifiant fiscal (IF)</label>
+          <input id="identifiantFiscal" name="identifiantFiscal" th:value="${cabinet.identifiantFiscal}" maxlength="30" inputmode="numeric">
+          <label for="ice">ICE</label>
+          <input id="ice" name="ice" th:value="${cabinet.ice}" maxlength="20" inputmode="numeric" pattern="\s*([0-9]\s*){15}"
+                 th:title="#{settings.ice.invalid}">
+          <label for="taxeProfessionnelle" th:text="#{settings.tax.tp}">Taxe professionnelle (TP)</label>
+          <input id="taxeProfessionnelle" name="taxeProfessionnelle" th:value="${cabinet.taxeProfessionnelle}" maxlength="30" inputmode="numeric">
+        </fieldset>
+        <label for="mentions" th:text="#{settings.mentions}">Mentions légales</label>
+        <textarea id="mentions" name="mentions" rows="3" maxlength="1000" th:text="${cabinet.mentionsLegales}"
+                  th:placeholder="#{settings.mentions.example}"></textarea>
+        <label class="case"><input type="checkbox" name="papierEntete" value="true" th:checked="${cabinet.papierEntete}">
+          <span th:text="#{settings.letterhead}">J'imprime sur du papier à en-tête : ne pas imprimer l'en-tête du cabinet</span></label>
+        <div class="actions"><button class="btn" type="submit" th:text="#{save}">Enregistrer</button></div>
+    </form>
+
+    <!-- Couvertures sanitaires proposées dans la fiche patient : liste du pays + ajouts du cabinet -->
+    <section class="couvertures" id="couvertures">
+      <h2 th:text="#{cov.title}">Couvertures sanitaires</h2>
+      <p class="muted" th:text="#{cov.help}">Proposées dans la fiche patient. Ajoutez vos mutuelles et assureurs.</p>
+      <p class="note"><strong th:text="#{cov.common}">Liste commune :</strong>
+        <span th:text="${#strings.listJoin(couverturesCommunes, ' · ')}">AMO - CNSS · AMO - CNOPS</span></p>
+      <ul class="liste-couvertures" th:unless="${#lists.isEmpty(couverturesCabinet)}">
+        <li th:each="c : ${couverturesCabinet}">
+          <span th:text="${c.libelle}">Mutuelle</span>
+          <form th:action="@{/settings/cabinet/couvertures/{id}/supprimer(id=${c.id})}" method="post">
+            <button type="submit" class="bouton-discret" th:attr="aria-label=#{cov.delete} + ' ' + ${c.libelle}" th:title="#{cov.delete}">✕</button>
+          </form>
+        </li>
+      </ul>
+      <form class="ajout-antecedent" th:action="@{/settings/cabinet/couvertures}" method="post">
+        <input type="text" name="libelle" required minlength="2" maxlength="100" th:placeholder="#{cov.add.ph}" th:attr="aria-label=#{cov.add.ph}">
+        <button type="submit" class="bouton petit principal" th:text="#{cov.add}">Ajouter</button>
+      </form>
+    </section>
+    </div>
+  </div>
+</main>
+</body>
+</html>

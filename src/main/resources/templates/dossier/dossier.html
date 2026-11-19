@@ -1,0 +1,329 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'patients')}">
+<head><title th:text="#{dos.page(${patient.fullName()})}">Dossier médical</title></head>
+<body>
+<!-- Dossier médical repris de SGCM-Cardio Web : mêmes onglets et même disposition que l'application de bureau -->
+<main id="main" class="contenu">
+<section class="dossier-medical">
+  <!-- Titre à gauche, actions à droite (ordre du code = ordre de lecture) -->
+  <header class="dossier-barre">
+    <div class="dossier-titre">
+      <a class="retour" th:href="@{/patients}" th:text="'‹ ' + #{nav.patients}">‹ Patients</a>
+      <h1><th:block th:text="#{dos.title}">Dossier médical :</th:block> <span th:text="${patient.nom.toUpperCase() + ' ' + patient.prenom}">Nom Prénom</span></h1>
+      <p class="sous-titre">
+        <span th:text="#{dos.number(${'' + patient.numero})}">N°</span>
+        <span th:if="${patient.age() != null}" th:text="' · ' + #{dos.age(${patient.age()})}"></span>
+        <span th:if="${patient.sexe != null}" th:text="' · ' + #{'patient.sex.' + ${patient.sexe}}"></span>
+        <span th:if="${patient.telephone != null}" th:text="' · ' + ${patient.telephone}"></span>
+      </p>
+    </div>
+    <span class="boutons-entete">
+      <a class="bouton" th:href="@{/patients/{p}/dossier/fiche-soins(p=${patient.id})}" target="_blank" rel="noopener"
+         th:title="#{dos.careSheet.help}" th:text="#{dos.careSheet}">Fiche de soins</a>
+      <a class="bouton" th:href="@{/patients/{p}/export(p=${patient.id})}" th:title="#{export.help}" th:text="#{dos.export}">Exporter le dossier</a>
+    </span>
+  </header>
+
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Succès</p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <!-- Allergies connues : bandeau rouge visible depuis tous les onglets (vide sinon) -->
+  <div id="bandeau-allergies" th:hx-get="@{/patients/{p}/allergies/bandeau(p=${patient.id})}" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Barre d'onglets : noms et ordre du bureau -->
+  <nav class="dossier-onglets" th:attr="aria-label=#{dos.tabs}">
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='info')}" th:classappend="${onglet == 'info'} ? 'actif'" th:aria-current="${onglet == 'info'} ? 'page'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 4a3.500 3.500 0 1 0 0 7 3.500 3.500 0 0 0 0-7zm0 9c-2.700 0-5 1.300-6 3.200a8 8 0 0 0 12 0c-1-1.900-3.300-3.200-6-3.200z"/></svg><th:block th:text="#{dos.tab.info}">Info</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='consultation',c=${selection != null ? selection.id : null})}" th:classappend="${onglet == 'consultation'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h2v6a3 3 0 0 0 6 0V3h2v6a5 5 0 0 1-4 4.900V16a3 3 0 0 0 6 0v-1.200a2.500 2.500 0 1 1 2 0V16a5 5 0 0 1-10 0v-2.100A5 5 0 0 1 6 9z"/></svg><th:block th:text="#{dos.tab.consultation}">Consultation</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='analyses',c=${selection != null ? selection.id : null})}" th:classappend="${onglet == 'analyses'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v2h-1v5l5.500 9.500A2.300 2.300 0 0 1 17.500 22h-11a2.300 2.300 0 0 1-2-3.500L10 9V4H9zm3 8.500L9.200 15h5.600z"/></svg><th:block th:text="#{dos.tab.analyses}">Analyses</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='imageries',c=${selection != null ? selection.id : null})}" th:classappend="${onglet == 'imageries'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm7 3v2H8v2h3v2H7v2h4v2H8v2h3v1h2v-1h3v-2h-3v-2h4v-2h-4v-2h3V8h-3V6z"/></svg><th:block th:text="#{dos.tab.imaging}">Imageries</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='ordonnances',c=${selection != null ? selection.id : null})}" th:classappend="${onglet == 'ordonnances'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8v3h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1zm2 2v1h4V4zm1 6v3H8v2h3v3h2v-3h3v-2h-3v-3z"/></svg><th:block th:text="#{dos.tab.prescriptions}">Ordonnances</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='rendez-vous')}" th:classappend="${onglet == 'rendez-vous'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3zM5 9v10h14V9zm2 2h4v4H7z"/></svg><th:block th:text="#{dos.tab.appointments}">Rendez-vous</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='paiement')}" th:classappend="${onglet == 'paiement'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 3v2h16V8zm0 4v5h16v-5zm2 2h5v2H6z"/></svg><th:block th:text="#{dos.tab.payment}">Paiement</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='fichiers')}" th:classappend="${onglet == 'fichiers'} ? 'actif'">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v2H3zm0 5h19l-1.500 9a1 1 0 0 1-1 1H4.500a1 1 0 0 1-1-1z"/></svg><th:block th:text="#{dos.tab.files}">Fichiers</th:block></a>
+    <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='courbes')}" th:classappend="${onglet == 'courbes'} ? 'actif'" th:title="#{dos.curves.title}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2v16h16v2H3zm15.300 3.300l1.400 1.400-5.700 5.700-3-3-3.300 3.300-1.400-1.400L11 7.600l3 3z"/></svg><th:block th:text="#{dos.tab.curves}">Courbes</th:block></a>
+  </nav>
+
+  <div class="dossier-contenu" th:classappend="${parConsultation} ? 'avec-liste'">
+
+    <!-- ═══ Panneau gauche : liste des consultations (onglets qui portent sur une consultation) ═══ -->
+    <aside class="dossier-liste" th:if="${parConsultation}" th:attr="aria-label=#{dos.list.label}">
+      <h2 class="dossier-bande">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.500V8h4.500zM11 11v2H9v2h2v2h2v-2h2v-2h-2v-2z"/></svg>
+        <th:block th:text="#{dos.consultations}">Consultations</th:block> <small th:text="'(' + ${#lists.size(visites)} + ')'">(0)</small></h2>
+      <!-- Ajouter : consultation à la date choisie (aujourd'hui par défaut), rouverte si elle existe déjà -->
+      <form class="dossier-ajout" method="post" th:action="@{/patients/{p}/dossier/consultations(p=${patient.id})}">
+        <label><span th:text="#{dos.date}">Date de consultation</span>
+          <input type="date" name="date" th:value="${aujourdhui}" th:max="${aujourdhui}" required></label>
+        <span class="dossier-actions-liste">
+          <button type="submit" class="bouton succes" th:text="#{dos.add}">+ Ajouter</button>
+          <details class="confirmer suppression-consultation" th:if="${selection != null}">
+            <summary class="bouton ambre" th:text="#{dos.edit}">Modifier</summary>
+            <span class="carte fenetre-suppression fenetre-date">
+              <strong th:text="#{dos.dateOf(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Date</strong>
+              <input type="date" name="date" form="changement-date" th:value="${selection.date}" th:max="${aujourdhui}" required th:attr="aria-label=#{dos.newDate}">
+              <input type="hidden" name="onglet" form="changement-date" th:value="${onglet}">
+              <span class="boutons-entete">
+                <button type="submit" form="changement-date" class="bouton principal" th:text="#{save}">Enregistrer</button>
+                <a class="bouton" th:href="@{/patients/{p}/dossier(p=${patient.id},onglet=${onglet},c=${selection.id})}" th:text="#{cancel}">Annuler</a>
+              </span>
+            </span>
+          </details>
+          <details class="confirmer suppression-consultation" th:if="${selection != null}">
+            <summary class="bouton danger" th:text="#{dos.delete}">Supprimer</summary>
+            <span class="carte fenetre-suppression">
+              <strong th:text="#{dos.delete.confirm(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Supprimer ?</strong>
+              <span class="note" th:text="#{dos.delete.help}">Vide, elle est supprimée.</span>
+              <input type="text" name="motif" form="suppression" maxlength="255" th:placeholder="#{dos.delete.reason}" th:attr="aria-label=#{dos.delete.reason.label}" autocomplete="off">
+              <span class="boutons-entete">
+                <button type="submit" form="suppression" class="bouton danger" th:text="#{dos.confirm}">Confirmer</button>
+                <a class="bouton" th:href="@{/patients/{p}/dossier(p=${patient.id},onglet=${onglet},c=${selection.id})}" th:text="#{cancel}">Annuler</a>
+              </span>
+            </span>
+          </details>
+        </span>
+      </form>
+      <form id="suppression" method="post" th:if="${selection != null}"
+            th:action="@{/patients/{p}/dossier/consultations/{c}/supprimer(p=${patient.id},c=${selection.id})}"></form>
+      <form id="changement-date" method="post" th:if="${selection != null}"
+            th:action="@{/patients/{p}/dossier/consultations/{c}/date(p=${patient.id},c=${selection.id})}"></form>
+
+      <p class="vide" th:if="${#lists.isEmpty(visites)}" th:text="#{dos.none.list}">Aucune consultation.</p>
+      <ul class="dossier-consultations" th:unless="${#lists.isEmpty(visites)}">
+        <!-- Comme sur le bureau : « #n - date », de la plus ancienne (n° 1) à la plus récente, le motif en dessous -->
+        <li th:each="v, i : ${visitesChrono}">
+          <a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet=${onglet},c=${v.id})}"
+             th:classappend="${selection != null and selection.id == v.id} ? 'actif'"
+             th:aria-current="${selection != null and selection.id == v.id} ? 'true'">
+            <strong class="date-ligne" th:text="'#' + ${i.count} + ' - ' + ${#temporals.format(v.date, 'dd/MM/yyyy')}">#1 - 01/01/2026</strong>
+            <span class="motif-ligne" th:if="${v.motif != null and !v.motif.isBlank()}" th:text="${#strings.abbreviate(v.motif, 70)}">Motif</span>
+            <span class="motif-ligne vide" th:if="${v.motif == null or v.motif.isBlank()}" th:text="#{dos.noReason}">(sans motif)</span>
+          </a>
+        </li>
+      </ul>
+      <a class="lien-discret corbeille-lien" th:href="@{/consultations/corbeille}" th:text="#{dos.trash}">Corbeille des consultations ›</a>
+    </aside>
+
+    <div class="dossier-panneau" th:switch="${onglet}">
+
+      <!-- ═══ Info : informations du patient, antécédents, allergies ═══ -->
+      <th:block th:case="'info'">
+        <div class="carte">
+          <h2 class="titre-lien"><span th:text="#{dos.info.title}">Informations du patient</span>
+            <span class="boutons-entete">
+              <a class="bouton petit ambre" th:href="@{/patients/{p}/edit(p=${patient.id})}" th:text="#{dos.edit}">Modifier</a>
+            </span></h2>
+          <div class="infos-bureau">
+            <dl>
+              <dt th:text="#{users.name}">Nom complet</dt><dd th:text="${patient.nom.toUpperCase() + ' ' + patient.prenom}">—</dd>
+              <dt th:text="#{patient.number}">Num dossier</dt><dd th:text="${patient.numero}">—</dd>
+              <dt th:text="#{patient.nationalid}">Identifiant</dt><dd th:text="${patient.identifiantNational} ?: '—'">—</dd>
+              <dt th:text="#{patient.sex}">Sexe</dt><dd th:text="${patient.sexe != null} ? #{'patient.sex.' + ${patient.sexe}} : '—'">—</dd>
+              <dt th:text="#{patient.age}">Âge</dt><dd th:text="${patient.age() != null} ? #{dos.age.birth(${patient.age()}, ${#temporals.format(patient.dateNaissance, 'dd/MM/yyyy')})} : '—'">—</dd>
+            </dl>
+            <dl>
+              <dt th:text="#{patient.phone}">Téléphone</dt><dd th:text="${patient.telephone} ?: '—'">—</dd>
+              <dt th:text="#{patient.email}">Email</dt><dd th:text="${patient.email} ?: '—'">—</dd>
+              <dt th:text="#{patient.address}">Adresse</dt><dd th:text="${patient.adresse} ?: '—'">—</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="carte" id="antecedents">
+          <h2><th:block th:text="#{dos.history}">Antécédents médicaux</th:block> <small th:unless="${#lists.isEmpty(antecedents)}" th:text="'(' + ${#lists.size(antecedents)} + ')'">(0)</small></h2>
+          <p class="vide" th:if="${#lists.isEmpty(antecedents)}" th:text="#{dos.history.none}">Aucun antécédent enregistré</p>
+          <div class="defilement-tableau" th:unless="${#lists.isEmpty(antecedents)}">
+            <table class="tableau compact">
+              <thead><tr><th th:text="#{appointment.date}">Date</th><th th:text="#{dos.col.type}">Type</th><th th:text="#{dos.col.description}">Description</th><th th:text="#{dos.col.note}">Note</th><th></th></tr></thead>
+              <tbody>
+                <tr th:each="a : ${antecedents}">
+                  <td class="heure" th:text="${a.date != null} ? ${#temporals.format(a.date, 'dd/MM/yyyy')} : ''">date</td>
+                  <td><span class="pastille" th:text="#{'antecedent.' + ${a.type}}">Médical</span></td>
+                  <td th:text="${a.description}">description</td>
+                  <td th:text="${a.note}">note</td>
+                  <td class="droite">
+                    <details class="confirmer">
+                      <summary class="bouton petit danger" th:attr="aria-label=#{dos.remove}">✕</summary>
+                      <form th:action="@{/patients/{p}/antecedents/{a}/supprimer(p=${patient.id},a=${a.id})}" method="post">
+                        <button type="submit" class="bouton petit danger" th:text="#{dos.remove}">Retirer</button>
+                      </form>
+                    </details>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <form class="ajout-antecedent" method="post" th:action="@{/patients/{p}/antecedents(p=${patient.id})}">
+            <select name="type" th:attr="aria-label=#{dos.history.type}">
+              <option th:each="t : ${typesAntecedent}" th:value="${t}" th:text="#{'antecedent.' + ${t}}">Médical</option>
+            </select>
+            <input type="text" name="description" required maxlength="500" th:placeholder="#{dos.history.example}" th:attr="aria-label=#{dos.col.description}" autocomplete="off">
+            <input type="date" name="date" th:attr="aria-label=#{appointment.date}">
+            <input type="text" name="note" maxlength="500" th:placeholder="#{dos.note.optional}" th:attr="aria-label=#{dos.col.note}" autocomplete="off">
+            <button type="submit" class="bouton petit succes" th:text="#{dos.add}">+ Ajouter</button>
+          </form>
+        </div>
+
+        <div class="carte" id="allergies">
+          <h2><th:block th:text="#{dos.allergies}">Allergies</th:block> <small th:unless="${#lists.isEmpty(allergies)}" th:text="'(' + ${#lists.size(allergies)} + ')'">(0)</small></h2>
+          <p class="vide" th:if="${#lists.isEmpty(allergies)}" th:text="#{dos.allergies.none}">Aucune allergie connue.</p>
+          <ul class="liste" th:unless="${#lists.isEmpty(allergies)}">
+            <li th:each="a : ${allergies}" class="ligne-ordonnance">
+              <span class="ligne-texte"><strong th:text="${a.nom}">Pénicilline</strong>
+                <small th:if="${a.date != null}" th:text="#{dos.allergies.detected(${#temporals.format(a.date, 'dd/MM/yyyy')})}"></small></span>
+              <form th:action="@{/patients/{p}/allergies/{a}/supprimer(p=${patient.id},a=${a.id})}" method="post">
+                <button type="submit" class="bouton petit danger" th:attr="aria-label=#{dos.remove}">✕</button>
+              </form>
+            </li>
+          </ul>
+          <form class="ajout-antecedent" method="post" th:action="@{/patients/{p}/allergies(p=${patient.id})}">
+            <input type="text" name="nom" required maxlength="200" th:placeholder="#{dos.allergies.example}" th:attr="aria-label=#{dos.allergies.label}" autocomplete="off">
+            <input type="date" name="date" th:attr="aria-label=#{dos.allergies.date}">
+            <button type="submit" class="bouton petit succes" th:text="#{dos.add}">+ Ajouter</button>
+          </form>
+        </div>
+      </th:block>
+
+      <!-- ═══ Consultation : constantes vitales et résultats cliniques de la consultation choisie ═══ -->
+      <th:block th:case="'consultation'">
+        <p class="carte vide" th:if="${selection == null}" th:text="#{dos.none.choose}">Aucune consultation.</p>
+        <th:block th:if="${selection != null}">
+          <h2 class="dossier-date" th:text="#{dos.consultationOf(${#temporals.format(selection.date, 'EEEE dd MMMM yyyy', #locale)})}">Consultation du</h2>
+          <form th:replace="~{dossier/consultation :: formulaire}"></form>
+        </th:block>
+      </th:block>
+
+      <!-- ═══ Analyses / imageries de la consultation choisie : demandes, résultats, impression ═══ -->
+      <th:block th:case="'analyses'">
+        <p class="carte vide" th:if="${selection == null}" th:text="#{dos.none.tab}">Aucune consultation.</p>
+        <th:block th:if="${selection != null}" th:with="succes=${null}, erreur=${null}">
+          <h2 class="dossier-date" th:text="#{dos.analysesOf(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Analyses du</h2>
+          <div th:replace="~{dossier/examens :: examens}"></div>
+        </th:block>
+      </th:block>
+      <th:block th:case="'imageries'">
+        <p class="carte vide" th:if="${selection == null}" th:text="#{dos.none.tab}">Aucune consultation.</p>
+        <th:block th:if="${selection != null}" th:with="succes=${null}, erreur=${null}">
+          <h2 class="dossier-date" th:text="#{dos.imagingOf(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Imageries du</h2>
+          <div th:replace="~{dossier/examens :: examens}"></div>
+        </th:block>
+      </th:block>
+
+      <!-- ═══ Ordonnances : ordonnance de la consultation choisie et documents médicaux ═══ -->
+      <th:block th:case="'ordonnances'">
+        <p class="carte vide" th:if="${selection == null}" th:text="#{dos.none.tab}">Aucune consultation.</p>
+        <th:block th:if="${selection != null}">
+          <div class="titre-lien dossier-outils">
+            <h2 class="dossier-date" th:text="#{dos.prescriptionOf(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Ordonnance du</h2>
+            <a class="bouton petit" th:href="@{/planning}" th:text="#{dos.nextAppointment}">Prochain RDV</a>
+          </div>
+          <div class="dossier-deux">
+            <div th:replace="~{dossier/consultation :: ordonnance}"></div>
+            <div class="carte documents-medicaux">
+              <h2 th:text="#{dos.docs}">Documents médicaux</h2>
+              <p class="doc-cible" th:text="#{dos.consultationOf(${#temporals.format(selection.date, 'dd/MM/yyyy')})}">Consultation du</p>
+              <h3 class="etiquette-rubrique" th:text="#{dos.docs.certificates}">Certificats</h3>
+              <div class="certificats">
+                <a class="bouton" target="_blank" rel="noopener" th:href="@{/consultations/{c}/documents/certificat(c=${selection.id},type='consultation')}" th:text="#{dos.tab.consultation}">Consultation</a>
+                <a class="bouton" target="_blank" rel="noopener" th:href="@{/consultations/{c}/documents/certificat(c=${selection.id},type='aptitude')}" th:text="#{dos.docs.sport}">Aptitude sportive</a>
+                <a class="bouton" target="_blank" rel="noopener" th:href="@{/consultations/{c}/documents/certificat(c=${selection.id},type='chronique')}" th:text="#{dos.docs.chronic}">Maladie chronique</a>
+              </div>
+              <form class="arret" method="get" target="_blank" th:action="@{/consultations/{c}/documents/certificat(c=${selection.id})}">
+                <select name="type" th:attr="aria-label=#{dos.docs.leave}">
+                  <option value="arret-travail" th:text="#{dos.docs.leave.work}">Arrêt de travail</option>
+                  <option value="arret-scolaire" th:text="#{dos.docs.leave.school}">Arrêt scolaire</option>
+                </select>
+                <label><th:block th:text="#{dos.docs.from}">du</th:block> <input type="date" name="debut" required th:value="${selection.date}"></label>
+                <label><th:block th:text="#{dos.docs.to}">au</th:block> <input type="date" name="fin" required th:value="${selection.date.plusDays(2)}"></label>
+                <button type="submit" class="bouton" th:text="#{dos.print}">Imprimer</button>
+              </form>
+              <h3 class="etiquette-rubrique" th:text="#{dos.docs.letters}">Fiches et courriers</h3>
+              <div class="certificats">
+                <a class="bouton" target="_blank" rel="noopener" th:href="@{/patients/{p}/dossier/fiche-soins(p=${patient.id},jusqua=${selection.id})}" th:text="#{dos.careSheet}">Fiche de soins</a>
+                <a class="bouton" th:each="r : ${redactions}" th:href="@{/consultations/{c}/redaction/{m}(c=${selection.id},m=${r.code})}"
+                   th:text="${r.sousTitre != null} ? #{dos.docs.report(${r.code == 'ETT' ? 'ETT' : #strings.toLowerCase(r.sousTitre)})} : ${r.titre}">Lettre</a>
+              </div>
+            </div>
+          </div>
+        </th:block>
+      </th:block>
+
+      <!-- ═══ Paiement : consultations du patient et actes de la consultation choisie (comme le bureau) ═══ -->
+      <th:block th:case="'paiement'">
+        <div class="dossier-deux">
+          <div class="carte">
+            <h2 class="titre-lien"><th:block th:text="#{dos.pay.title}">Consultations du patient</th:block> <a th:href="@{/patients/{p}/facture(p=${patient.id})}" th:text="#{dos.pay.invoice}">Facture ›</a></h2>
+            <p class="vide" th:if="${#lists.isEmpty(paiements)}" th:text="#{consultation.none}">Aucune consultation.</p>
+            <div class="defilement-tableau" th:unless="${#lists.isEmpty(paiements)}">
+              <table class="tableau compact tableau-choix">
+                <thead><tr><th th:text="#{dos.pay.no}">N°</th><th th:text="#{appointment.date}">Date</th><th class="droite" th:text="#{dos.pay.amount}">Montant</th><th class="droite" th:text="#{dos.pay.paid}">Versement</th><th class="droite" th:text="#{dos.pay.rest}">Reste</th></tr></thead>
+                <tbody>
+                  <tr th:each="l, i : ${paiements}" th:classappend="${paiementChoisi != null and paiementChoisi == l.consultationId} ? 'selection'">
+                    <td th:text="${i.count}">1</td>
+                    <td><a th:href="@{/patients/{p}/dossier(p=${patient.id},onglet='paiement',c=${l.consultationId})}"
+                           th:text="${#temporals.format(l.date, 'dd/MM/yyyy')}">date</a></td>
+                    <td class="droite" th:text="${@monnaie.format(l.total, devise)}">0</td>
+                    <td class="droite" th:text="${@monnaie.format(l.verse, devise)}">0</td>
+                    <td class="droite" th:classappend="${@monnaie.positif(l.reste())} ? 'texte-alerte'" th:text="${@monnaie.format(l.reste(), devise)}">0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div th:if="${paiementChoisi != null}" id="actes" class="carte" th:hx-get="@{/consultations/{c}/actes(c=${paiementChoisi})}" hx-trigger="load" hx-swap="outerHTML">
+            <h2 th:text="#{dos.acts}">Actes</h2>
+            <p class="vide" th:text="#{dos.loading}">Chargement…</p>
+          </div>
+        </div>
+      </th:block>
+
+      <!-- ═══ Fichiers joints et courbes des constantes (chargés après la page) ═══ -->
+      <th:block th:case="'fichiers'">
+        <div id="fichiers" class="carte" th:hx-get="@{/patients/{p}/fichiers(p=${patient.id})}" hx-trigger="load" hx-swap="outerHTML">
+          <h2 th:text="#{dos.tab.files}">Fichiers</h2><p class="vide" th:text="#{dos.loading}">Chargement…</p>
+        </div>
+      </th:block>
+      <th:block th:case="'courbes'">
+        <div class="carte" id="evolution" th:hx-get="@{/patients/{p}/dossier/evolution(p=${patient.id})}" hx-trigger="load" hx-swap="outerHTML">
+          <h2 th:text="#{dos.curves.title}">Évolution des constantes</h2><p class="vide" th:text="#{dos.loading}">Chargement…</p>
+        </div>
+      </th:block>
+
+      <!-- ═══ Rendez-vous du patient ═══ -->
+      <th:block th:case="'rendez-vous'">
+        <div class="carte">
+          <h2 class="titre-lien"><span th:text="#{dos.rdv.title}">Table des rendez-vous</span>
+            <a class="lien-discret" th:href="@{/planning}" th:text="#{dos.rdv.planning}">Ouvrir le planning ›</a></h2>
+          <p class="vide" th:if="${#lists.isEmpty(rendezVous)}" th:text="#{dos.rdv.none}">Aucun rendez-vous pour ce patient.</p>
+          <div class="defilement-tableau" th:unless="${#lists.isEmpty(rendezVous)}">
+            <table class="tableau">
+              <thead><tr><th th:text="#{dos.rdv.col.title}">Titre de rendez-vous</th><th th:text="#{appointment.date}">Date</th><th th:text="#{dos.rdv.col.start}">Début</th><th th:text="#{dos.rdv.col.end}">Fin</th><th th:text="#{dos.rdv.col.state}">État</th></tr></thead>
+              <tbody>
+                <tr th:each="r : ${rendezVous}">
+                  <td th:text="${r.motif != null and !r.motif.isBlank()} ? ${r.motif} : #{dos.tab.appointments}">Contrôle</td>
+                  <td class="heure" th:text="${#temporals.format(r.debut.atZone(cab.zone), 'dd/MM/yyyy')}">date</td>
+                  <td class="heure" th:text="${#temporals.format(r.debut.atZone(cab.zone), 'HH:mm')}">09:00</td>
+                  <td class="heure" th:text="${#temporals.format(r.fin.atZone(cab.zone), 'HH:mm')}">09:30</td>
+                  <td><span class="pastille" th:classappend="${r.statut == 'TERMINE'} ? 'vert' : (${r.statut == 'ABSENT' or r.statut == 'ANNULE'} ? 'urgent' : 'bleu')"
+                            th:text="#{'appointment.status.' + ${r.statut}}">Planifié</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </th:block>
+    </div>
+  </div>
+</section>
+</main>
+</body>
+</html>

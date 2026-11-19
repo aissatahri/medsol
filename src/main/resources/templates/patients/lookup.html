@@ -1,0 +1,12 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="options" class="options">
+    <label class="option" th:each="p : ${items}">
+        <input type="radio" name="patientId" th:value="${p.id}" required>
+        <span th:text="${'#' + p.numero + ' ' + p.nom + ' ' + p.prenom}"></span>
+        <small class="muted" th:if="${p.dateNaissance != null}" th:text="${p.dateNaissance}"></small>
+    </label>
+</div>
+</body>
+</html>

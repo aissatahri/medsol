@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- En-tête et pied communs aux documents juridiques (en français : marché marocain) -->
+<th:block th:fragment="tete(titre)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="${titre} + ' - MedSol'">Document - MedSol</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</th:block>
+
+<!-- Identité de l'éditeur (Plateforme › Éditeur de MedSol) -->
+<p th:fragment="editeur" class="bloc-editeur"><strong th:text="${editeurNom}">MedSol</strong>
+  <th:block th:if="${!#strings.isEmpty(editeur.statut_juridique)}"> — <span th:text="${editeur.statut_juridique}"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.adresse)}"><br><span th:text="${editeur.adresse} + (${#strings.isEmpty(editeur.ville)} ? '' : ', ' + ${editeur.ville})"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.ice)}"><br>ICE : <span th:text="${editeur.ice}"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.identifiant_fiscal)}"> · IF : <span th:text="${editeur.identifiant_fiscal}"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.rc)}"> · RC : <span th:text="${editeur.rc}"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.telephone)}"><br>Téléphone : <span th:text="${editeur.telephone}"></span></th:block>
+  <th:block th:if="${!#strings.isEmpty(editeur.email)}"><br>E-mail : <span th:text="${editeur.email}"></span></th:block></p>
+
+<nav th:fragment="pied" class="pied-juridique" aria-label="Documents juridiques">
+  <a th:href="@{/conditions}">Conditions générales</a> ·
+  <a th:href="@{/sous-traitance}">Accord de traitement des données</a> ·
+  <a th:href="@{/confidentialite}">Confidentialité</a> ·
+  <a th:href="@{/mentions-legales}">Mentions légales</a>
+</nav>
+</body>
+</html>

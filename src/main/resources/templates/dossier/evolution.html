@@ -1,0 +1,35 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Courbes des constantes reprises de SGCM-Cardio Web (SVG dessiné par le serveur) -->
+<div class="carte" id="evolution" th:fragment="evolution">
+  <h2><th:block th:text="#{dos.curves.title}">Évolution des constantes</th:block> <small th:text="#{evo.count(${nbConsultations})}">(0)</small></h2>
+  <p class="vide" th:if="${#lists.isEmpty(graphiques)}" th:text="#{evo.none}">Aucune constante enregistrée pour ce patient.</p>
+  <div class="graphiques">
+    <figure class="graphique" th:each="g : ${graphiques}">
+      <figcaption>
+        <strong th:text="${g.titre}">Tension</strong>
+        <span class="legende-courbes">
+          <span th:each="s : ${g.series}" class="legende-courbe" th:classappend="${s.classe}">
+            <i aria-hidden="true"></i><span th:text="${s.nom} + ' : ' + ${s.derniere}">Bras gauche</span>
+          </span>
+        </span>
+      </figcaption>
+      <svg th:attr="viewBox=${g.vue()},aria-label=#{evo.chart(${g.titre})}" role="img">
+        <g class="grille">
+          <th:block th:each="gr : ${g.graduations}">
+            <line x1="38" th:attr="x2=${g.largeur - 10},y1=${gr.y},y2=${gr.y}"/>
+            <text x="32" th:attr="y=${gr.y + 3}" text-anchor="end" th:text="${gr.libelle}">120</text>
+          </th:block>
+          <text th:each="d : ${g.dates}" th:attr="x=${d[0]},y=${g.hauteur - 6}" text-anchor="middle" th:text="${d[1]}">01/01/26</text>
+        </g>
+        <g th:each="s : ${g.series}" class="courbe" th:classappend="${s.classe}">
+          <path th:attr="d=${s.trace}"/>
+          <circle th:each="p : ${s.points}" r="3.2" th:attr="cx=${p.x},cy=${p.y}"><title th:text="${s.nom} + ' — ' + ${p.bulle}">valeur</title></circle>
+        </g>
+      </svg>
+    </figure>
+  </div>
+</div>
+</body>
+</html>

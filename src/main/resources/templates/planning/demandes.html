@@ -1,0 +1,67 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'appointments')}">
+<head><title th:text="#{res.admin.title} + ' - MedSol'">Demandes en ligne - MedSol</title></head>
+<body>
+<!-- Demandes de rendez-vous reçues par la page publique : accepter (fiche patient + rendez-vous) ou refuser -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <a class="retour" th:href="@{/planning}" th:text="'‹ ' + #{nav.appointments}">‹ Planning</a>
+      <h1 th:text="#{res.admin.title}">Demandes en ligne</h1>
+      <p class="sous-titre" th:text="#{res.admin.subtitle}">Acceptez ou refusez chaque demande.</p>
+    </div>
+    <a th:if="${isDoctor}" class="bouton" th:href="@{/settings/reservation}" th:text="#{settings.booking}">Réservation en ligne</a>
+  </header>
+  <p th:if="${succes}" class="alerte succes" role="status">
+    <th:block th:text="${succes}">Accepté</th:block>
+    <a th:if="${whatsapp != null}" class="bouton petit principal" th:href="${whatsapp}" target="_blank" rel="noopener" th:text="#{res.admin.whatsapp}">Prévenir par WhatsApp</a></p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <div class="carte">
+    <p class="vide" th:if="${#lists.isEmpty(demandes)}" th:text="#{res.admin.none}">Aucune demande en attente.</p>
+    <ul class="liste demandes" th:unless="${#lists.isEmpty(demandes)}">
+      <li th:each="d : ${demandes}" class="demande">
+        <div class="ligne-texte">
+          <strong th:text="${#temporals.format(d.debut, 'EEEE dd/MM/yyyy', #locale)} + ' · ' + ${#temporals.format(d.debut, 'HH:mm')} + '–' + ${#temporals.format(d.fin, 'HH:mm')}">lundi 16/11 · 09:00</strong>
+          <span><b th:text="${d.nomComplet()}">Patient</b> · <a th:href="'tel:' + ${#strings.replace(d.telephone, ' ', '')}" th:text="${d.telephone}">tél</a>
+            <th:block th:if="${d.email != null}" th:text="' · ' + ${d.email}"></th:block></span>
+          <small class="note" th:if="${d.motif != null}" th:text="#{bin.reason(${d.motif})}">Motif</small>
+          <small class="note" th:text="#{res.admin.received(${#temporals.format(d.creeLe.atZone(cab.zone), 'dd/MM/yyyy HH:mm')})}">reçue le</small>
+        </div>
+        <div class="actions-demande">
+          <!-- Accepter : rattacher à une fiche existante (même téléphone ou même nom) ou créer la fiche -->
+          <form th:each="p : ${candidats.get(d.id)}" method="post" th:action="@{/planning/demandes/{id}/accepter(id=${d.id})}">
+            <input type="hidden" name="patientId" th:value="${p.id}">
+            <button type="submit" class="bouton petit principal" th:text="#{res.admin.acceptFor(${p.nomComplet()}, ${'' + p.numero})}">Accepter pour …</button>
+          </form>
+          <form method="post" th:action="@{/planning/demandes/{id}/accepter(id=${d.id})}">
+            <button type="submit" class="bouton petit" th:classappend="${#lists.isEmpty(candidats.get(d.id))} ? 'principal'"
+                    th:text="#{res.admin.acceptNew}">Accepter (nouvelle fiche)</button>
+          </form>
+          <form method="post" th:action="@{/planning/demandes/{id}/refuser(id=${d.id})}" th:attr="data-confirm=#{res.admin.refuse.confirm(${d.nomComplet()})}">
+            <button type="submit" class="bouton petit danger" th:text="#{res.admin.refuse}">Refuser</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="carte" th:unless="${#lists.isEmpty(traitees)}">
+    <h2 th:text="#{res.admin.recent}">Dernières demandes traitées</h2>
+    <table class="tableau compact">
+      <thead><tr><th th:text="#{dos.tab.appointments}">Rendez-vous</th><th th:text="#{patient.name}">Patient</th><th th:text="#{dos.rdv.col.state}">État</th></tr></thead>
+      <tbody>
+        <tr th:each="d : ${traitees}">
+          <td class="heure" th:text="${#temporals.format(d.debut, 'dd/MM/yyyy HH:mm')}">date</td>
+          <td><a th:if="${d.patientId != null}" th:href="@{/patients/{p}(p=${d.patientId})}" th:text="${d.nomComplet()}">Patient</a>
+            <span th:if="${d.patientId == null}" th:text="${d.nomComplet()}">Patient</span></td>
+          <td><span class="pastille" th:classappend="${d.statut == 'ACCEPTEE'} ? 'vert' : (${d.statut == 'REFUSEE'} ? 'urgent' : '')"
+                    th:text="#{'res.state.' + ${d.statut}}">Acceptée</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

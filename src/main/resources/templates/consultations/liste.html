@@ -1,0 +1,64 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'consultations')}">
+<head><title th:text="#{dos.consultations} + ' - MedSol'">Consultations - MedSol</title></head>
+<body>
+<!-- Historique des consultations, repris de SGCM-Cardio Web (consultation/recherche) -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{dos.consultations}">Consultations</h1>
+      <p class="sous-titre" th:text="#{hist.subtitle}">Recherche par patient, motif, examen, diagnostic ou médicament prescrit.</p>
+    </div>
+    <a class="bouton" th:href="@{/consultations/corbeille}" th:title="#{hist.bin.help}" th:text="#{hist.bin}">Corbeille</a>
+  </header>
+
+  <div class="carte">
+    <form id="recherche-consultations" class="recherche-consultations" th:action="@{/consultations}" method="get"
+          th:hx-get="@{/consultations}" hx-trigger="input changed delay:300ms from:input[name=q], change, submit"
+          hx-target="#resultats" hx-push-url="true" hx-indicator="#chargement-c">
+      <div class="recherche">
+        <input type="search" name="q" th:value="${q}" th:placeholder="#{hist.search}"
+               autocomplete="off" th:attr="aria-label=#{hist.search.label}" autofocus>
+        <span id="chargement-c" class="htmx-indicator chargement" aria-hidden="true"></span>
+      </div>
+      <div class="filtres-consultations">
+        <label><th:block th:text="#{hist.in}">Dans</th:block>
+          <select name="dans">
+            <option value="TOUT" th:selected="${dans == 'TOUT'}" th:text="#{hist.in.all}">Tout</option>
+            <option value="PATIENT" th:selected="${dans == 'PATIENT'}" th:text="#{patient.name}">Patient</option>
+            <option value="CLINIQUE" th:selected="${dans == 'CLINIQUE'}" th:text="#{hist.in.clinical}">Motif, examen, diagnostic</option>
+            <option value="MEDICAMENT" th:selected="${dans == 'MEDICAMENT'}" th:text="#{hist.in.medicines}">Médicaments prescrits</option>
+          </select>
+        </label>
+        <label><th:block th:text="#{hist.from}">Du</th:block> <input type="date" name="du" th:value="${du}"></label>
+        <label><th:block th:text="#{hist.to}">Au</th:block> <input type="date" name="au" th:value="${au}"></label>
+      </div>
+    </form>
+
+    <div id="resultats" th:fragment="resultats">
+      <p class="vide" th:if="${#lists.isEmpty(resultats)}" th:text="#{hist.none}">Aucune consultation ne correspond.</p>
+      <table class="tableau tableau-consultations" th:unless="${#lists.isEmpty(resultats)}">
+        <thead><tr><th th:text="#{appointment.date}">Date</th><th th:text="#{patient.name}">Patient</th><th th:text="#{queue.reason}">Motif</th><th class="masque-mobile" th:text="#{consultation.diagnosis}">Diagnostic</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${resultats}">
+            <td><a th:href="@{/patients/{p}/dossier(p=${r.patientId},onglet='consultation',c=${r.id})}" th:text="${#temporals.format(r.date, 'dd/MM/yyyy')}">date</a></td>
+            <td><a class="patient-lien" th:href="@{/patients/{p}/dossier(p=${r.patientId})}"><span th:text="${r.nomComplet()}">Patient</span></a>
+              <small class="note" th:if="${r.numero != null}" th:text="#{dos.number(${'' + r.numero})}">dossier</small></td>
+            <td th:text="${#strings.isEmpty(r.motif)} ? '—' : ${#strings.abbreviate(r.motif, 90)}">motif</td>
+            <td class="masque-mobile" th:text="${#strings.isEmpty(r.diagnostic)} ? '—' : ${#strings.abbreviate(r.diagnostic, 90)}">diagnostic</td>
+          </tr>
+        </tbody>
+      </table>
+      <nav class="pagination" th:if="${page > 0 or suivante}" th:attr="aria-label=#{pat.pages}">
+        <a class="bouton" th:if="${page > 0}" th:href="@{/consultations(q=${q},dans=${dans},du=${du},au=${au},page=${page - 1})}"
+           th:hx-get="@{/consultations(q=${q},dans=${dans},du=${du},au=${au},page=${page - 1})}" hx-target="#resultats" hx-push-url="true" th:text="#{pat.previous}">‹ Précédentes</a>
+        <span th:text="#{hist.page(${page + 1})}">Page 1</span>
+        <a class="bouton" th:if="${suivante}" th:href="@{/consultations(q=${q},dans=${dans},du=${du},au=${au},page=${page + 1})}"
+           th:hx-get="@{/consultations(q=${q},dans=${dans},du=${du},au=${au},page=${page + 1})}" hx-target="#resultats" hx-push-url="true" th:text="#{pat.next}">Suivantes ›</a>
+      </nav>
+    </div>
+  </div>
+</main>
+</body>
+</html>

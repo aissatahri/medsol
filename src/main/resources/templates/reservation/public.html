@@ -1,0 +1,115 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1730">
+  <title th:text="(${c != null} ? ${c.nom} + ' — ' : '') + #{res.title}">Prendre rendez-vous</title>
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<!-- Prise de rendez-vous en ligne : page publique d'un cabinet (sans compte). Étapes : creneaux, formulaire,
+     confirmee, annuler, annulee, introuvable. -->
+<body class="page-reservation">
+<div th:replace="~{fragments/public :: bandeau-test}"></div>
+<main class="reservation" th:switch="${etape}">
+
+  <!-- En-tête : le cabinet -->
+  <header class="carte reservation-tete" th:if="${c != null}">
+    <h1 th:text="${c.nom}">Cabinet</h1>
+    <p class="sous-titre">
+      <span th:text="${c.specialite}">Cardiologie</span>
+      <span th:if="${c.adresse != null}" th:text="' · ' + ${c.adresse}"></span>
+      <a th:if="${c.telephone != null}" th:href="'tel:' + ${#strings.replace(c.telephone, ' ', '')}" th:text="' · ' + ${c.telephone}"></a>
+    </p>
+    <p class="note" th:if="${!#strings.isEmpty(c.message)}" th:text="${c.message}">Message du cabinet</p>
+  </header>
+
+  <!-- 1. Créneaux libres de la semaine -->
+  <section th:case="'creneaux'" class="carte">
+    <h2 th:text="#{res.choose}">Choisissez un créneau</h2>
+    <p class="alerte erreur" th:if="${param.pris}" role="alert" th:text="#{res.taken}">Ce créneau vient d'être pris.</p>
+    <p class="vide" th:unless="${c.horaires}" th:text="#{res.noHours}">Le cabinet n'a pas encore publié ses horaires.</p>
+    <nav class="semaine-reservation" th:if="${c.horaires}">
+      <a class="bouton petit" th:if="${precedent != null}" th:href="@{/r/{l}(l=${lien},du=${precedent})}" th:text="#{res.prev}">‹ Semaine précédente</a>
+      <a class="bouton petit" th:if="${suivant != null}" th:href="@{/r/{l}(l=${lien},du=${suivant})}" th:text="#{res.next}">Semaine suivante ›</a>
+    </nav>
+    <div class="jours-reservation" th:if="${c.horaires}">
+      <div class="jour-reservation" th:each="j : ${jours}">
+        <h3 th:text="${#temporals.format(j.key, 'EEE d MMM', #locale)}">lun. 16 nov.</h3>
+        <p class="vide" th:if="${#lists.isEmpty(j.value)}" th:text="#{res.full}">Complet</p>
+        <a class="creneau" th:each="s : ${j.value}" th:href="@{/r/{l}/creneau(l=${lien},debut=${s.debut})}"
+           th:text="${#temporals.format(s.debut, 'HH:mm')}">09:00</a>
+      </div>
+    </div>
+    <p class="note" th:text="#{res.validation}">Votre demande sera confirmée par le cabinet.</p>
+  </section>
+
+  <!-- 2. Coordonnées du patient -->
+  <section th:case="'formulaire'" class="carte">
+    <h2 th:text="#{res.yourAppointment}">Votre rendez-vous</h2>
+    <p class="creneau-choisi"><strong th:text="${#temporals.format(debut, 'EEEE d MMMM yyyy', #locale)} + ' · ' + ${#temporals.format(debut, 'HH:mm')}">lundi 16 novembre · 09:00</strong>
+      <a th:href="@{/r/{l}(l=${lien},du=${debut.toLocalDate()})}" th:text="#{res.change}">Changer</a></p>
+    <p class="alerte erreur" th:if="${erreur != null}" role="alert" th:text="#{${erreur}}">Erreur</p>
+    <form class="formulaire" method="post" th:action="@{/r/{l}(l=${lien})}">
+      <input type="hidden" name="debut" th:value="${debut}">
+      <!-- champ piège : invisible pour les personnes, rempli par les robots -->
+      <label class="piege" aria-hidden="true">Site <input type="text" name="site" tabindex="-1" autocomplete="off"></label>
+      <div class="ligne-champs">
+        <label><th:block th:text="#{patient.lastname} + ' *'">Nom *</th:block>
+          <input name="nom" required maxlength="100" autocomplete="family-name" th:value="${saisie?.nom}"></label>
+        <label><th:block th:text="#{patient.firstname} + ' *'">Prénom *</th:block>
+          <input name="prenom" required maxlength="100" autocomplete="given-name" th:value="${saisie?.prenom}"></label>
+      </div>
+      <div class="ligne-champs">
+        <label><th:block th:text="#{patient.phone} + ' *'">Téléphone *</th:block>
+          <input name="telephone" type="tel" required maxlength="30" autocomplete="tel" th:value="${saisie?.telephone}"></label>
+        <label><th:block th:text="#{res.email}">E-mail (pour recevoir la confirmation)</th:block>
+          <input name="email" type="email" maxlength="200" autocomplete="email" th:value="${saisie?.email}"></label>
+      </div>
+      <label><th:block th:text="#{queue.reason}">Motif</th:block>
+        <input name="motif" maxlength="200" th:placeholder="#{plan.reason.example}" th:value="${saisie?.motif}"></label>
+      <label class="case"><input type="checkbox" name="consentement" value="true" required>
+        <span th:text="#{res.consent(${c.nom})}">J'accepte que le cabinet utilise ces informations pour gérer mon rendez-vous.</span></label>
+      <button type="submit" class="bouton principal large" th:text="#{res.send}">Envoyer ma demande</button>
+    </form>
+  </section>
+
+  <!-- 3. Demande envoyée -->
+  <section th:case="'confirmee'" class="carte">
+    <h2 th:text="#{res.sent.title}">Demande envoyée</h2>
+    <p class="alerte succes" role="status"
+       th:text="#{res.sent(${#temporals.format(debut, 'EEEE d MMMM yyyy', #locale)} + ' · ' + ${#temporals.format(debut, 'HH:mm')})}">Demande envoyée.</p>
+    <p th:text="#{res.sent.next}">Le cabinet va confirmer votre rendez-vous.</p>
+    <p class="note"><th:block th:text="#{res.sent.cancel}">Pour annuler, gardez ce lien :</th:block><br>
+      <a th:href="${annulation}" th:text="${annulation}">lien</a></p>
+  </section>
+
+  <!-- 4. Annulation par le patient -->
+  <section th:case="'annuler'" class="carte">
+    <h2 th:text="#{res.cancel.title}">Annuler mon rendez-vous</h2>
+    <p class="alerte erreur" th:if="${a == null}" role="alert" th:text="#{res.cancel.invalid}">Ce lien n'est plus valable.</p>
+    <th:block th:if="${a != null}">
+      <p th:text="#{res.cancel.confirm(${a.cabinet}, ${#temporals.format(a.debut, 'EEEE d MMMM yyyy', #locale)} + ' · ' + ${#temporals.format(a.debut, 'HH:mm')})}">Annuler ?</p>
+      <form method="post" th:action="@{/r/annuler/{j}(j=${jeton})}">
+        <button type="submit" class="bouton danger large" th:text="#{res.cancel.button}">Annuler mon rendez-vous</button>
+      </form>
+    </th:block>
+  </section>
+  <section th:case="'annulee'" class="carte">
+    <h2 th:text="#{res.cancel.title}">Annuler mon rendez-vous</h2>
+    <p class="alerte succes" role="status" th:text="#{res.cancel.done}">Votre rendez-vous est annulé.</p>
+  </section>
+
+  <section th:case="'introuvable'" class="carte">
+    <h1 th:text="#{res.title}">Prendre rendez-vous</h1>
+    <p class="vide" th:text="#{res.notFound}">Ce cabinet ne propose pas la prise de rendez-vous en ligne.</p>
+  </section>
+
+  <footer class="reservation-pied">
+    <p th:replace="~{fragments/public :: langues}"></p>
+    <p class="note" th:text="#{res.poweredBy}">Prise de rendez-vous par MedSol</p>
+  </footer>
+</main>
+</body>
+</html>

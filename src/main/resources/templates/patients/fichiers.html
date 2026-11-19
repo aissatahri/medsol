@@ -1,0 +1,42 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Fichiers joints au dossier, repris de SGCM-Cardio Web -->
+<div id="fichiers" class="carte" th:fragment="fichiers">
+  <h2><th:block th:text="#{files.title}">Fichiers joints</th:block> <small th:unless="${#lists.isEmpty(fichiers)}" th:text="'(' + ${#lists.size(fichiers)} + ')'">(0)</small></h2>
+  <p th:if="${erreur != null}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+  <p th:if="${succes != null}" class="alerte succes" th:text="${succes}" role="status">Ajouté</p>
+
+  <form class="ajout-antecedent" th:hx-post="@{/patients/{p}/fichiers(p=${patientId})}" hx-target="#fichiers" hx-swap="outerHTML"
+        hx-encoding="multipart/form-data">
+    <!-- Sur téléphone, l'appareil photo est proposé : la photo d'un résultat papier part directement dans le dossier -->
+    <input type="file" name="fichier" required accept="application/pdf,image/jpeg,image/png,image/webp" capture="environment" th:attr="aria-label=#{files.file}">
+    <select name="categorie" th:attr="aria-label=#{files.category}">
+      <option th:each="c : ${categories}" th:value="${c.key}" th:text="#{'files.cat.' + ${c.key}}">Résultat</option>
+    </select>
+    <select name="consultation" th:attr="aria-label=#{files.consultation}">
+      <option value="" th:text="#{files.noConsultation}">Sans consultation</option>
+      <option th:each="c : ${consultations}" th:value="${c.id}" th:text="#{dos.consultationOf(${#temporals.format(c.date, 'dd/MM/yyyy')})}">Consultation</option>
+    </select>
+    <button type="submit" class="bouton petit principal" th:text="#{queue.add.submit}">Ajouter</button>
+  </form>
+
+  <p class="vide" th:if="${#lists.isEmpty(fichiers)}" th:text="#{files.none}">Aucun fichier dans ce dossier.</p>
+  <ul class="liste" th:unless="${#lists.isEmpty(fichiers)}">
+    <li th:each="f : ${fichiers}" class="ligne-ordonnance">
+      <span class="ligne-texte">
+        <a th:href="@{/patients/{p}/fichiers/{f}(p=${patientId},f=${f.id})}" target="_blank" rel="noopener" th:text="${f.nom}">scan.pdf</a>
+        <small th:text="#{'files.cat.' + ${f.categorie}} + ' · ' + ${f.tailleTexte()} + ' · ' + ${#temporals.format(f.le.atZone(cab.zone), 'dd/MM/yyyy')}
+              + (${f.consultation != null} ? ' · ' + #{dos.consultationOf(${#temporals.format(f.consultation, 'dd/MM/yyyy')})} : '')">Résultat</small>
+      </span>
+      <form th:hx-post="@{/patients/{p}/fichiers/{f}/supprimer(p=${patientId},f=${f.id})}" hx-target="#fichiers" hx-swap="outerHTML"
+            th:attr="hx-confirm=#{files.delete.confirm(${f.nom})}">
+        <button type="submit" class="bouton petit danger" th:attr="aria-label=#{dos.delete}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>
+        </button>
+      </form>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

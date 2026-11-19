@@ -1,0 +1,47 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.consultation} + ' - MedSol'">Consultation - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.settings} + ' › ' + #{settings.consultation}">Paramètres › Consultation</h1>
+      <p class="sous-titre" th:text="#{cset.subtitle}">Champs cliniques et constantes proposés dans la consultation.</p>
+    </div>
+  </header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('consultation')}"></nav>
+    <div class="parametres-section">
+  <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+  <p class="alerte succes" role="status" th:if="${done}" th:text="#{${done}}"></p>
+
+  <div class="grille-2">
+    <div class="carte" th:each="bloc : ${ {{'CHAMP', 'cons.clinical', champs}, {'CONSTANTE', 'cons.vitals', constantes}} }">
+      <h2 th:text="#{${bloc[1]}}">Champs</h2>
+      <ul class="liste">
+        <li th:each="t : ${bloc[2]}" class="ligne-ordonnance" th:classappend="${t.masque} ? 'masque'">
+          <span class="ligne-texte"><strong th:text="${t.label}">Symptômes</strong>
+            <small th:text="(${t.propre} ? #{cset.own} : #{cset.model}) + (${t.unite != null} ? ' · ' + ${t.unite} : '')
+                  + (${t.complexe} ? ' · ' + #{cset.multiple} : '') + (${t.masque} ? ' · ' + #{cset.hidden} : '')">Modèle</small></span>
+          <form th:unless="${t.propre}" th:action="@{/settings/consultation/{g}/{id}/masque(g=${bloc[0]},id=${t.id})}" method="post">
+            <input type="hidden" name="masque" th:value="${!t.masque}">
+            <button type="submit" class="bouton petit" th:classappend="${t.masque} ? 'principal' : 'discret'" th:text="${t.masque} ? #{cset.show} : #{cset.hide}">Masquer</button>
+          </form>
+          <form th:if="${t.propre}" th:action="@{/settings/consultation/{g}/{id}/retirer(g=${bloc[0]},id=${t.id})}" method="post">
+            <button type="submit" class="bouton petit danger" th:text="#{dos.remove}">Retirer</button>
+          </form>
+        </li>
+      </ul>
+      <form class="ajout-antecedent" th:action="@{/settings/consultation/{g}(g=${bloc[0]})}" method="post">
+        <input type="text" name="libelle" required maxlength="100" th:placeholder="${bloc[0] == 'CHAMP'} ? #{cset.field.example} : #{cset.vital.example}" th:attr="aria-label=#{cset.label}">
+        <input th:if="${bloc[0] == 'CONSTANTE'}" type="text" name="unite" maxlength="20" th:placeholder="#{cset.unit.example}" th:attr="aria-label=#{cset.unit}">
+        <button type="submit" class="bouton petit principal" th:text="#{queue.add.submit}">Ajouter</button>
+      </form>
+    </div>
+  </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

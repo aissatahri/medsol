@@ -1,0 +1,81 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'caisse')}">
+<head><title th:text="#{nav.cash} + ' - MedSol'">Caisse - MedSol</title></head>
+<body>
+<!-- Caisse reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu" th:with="retour=${impayes} ? '/caisse?impayes=true' : '/caisse?jour=' + ${jour}">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.cash}">Caisse</h1>
+      <p class="sous-titre" th:text="${impayes} ? #{cash.unpaid.subtitle} : #{cash.day(${jourTexte})}">Jour</p>
+    </div>
+    <form class="navigation-semaine" method="get" th:action="@{/caisse}">
+      <input type="date" name="jour" th:value="${jour}" th:attr="aria-label=#{plan.cal.day}" class="champ-date">
+      <button type="submit" class="bouton" th:text="#{cash.show}">Afficher</button>
+      <a class="bouton" th:href="@{/caisse}" th:text="#{plan.cal.today}">Aujourd'hui</a>
+      <a class="bouton" th:classappend="${impayes} ? 'principal'" th:href="@{/caisse(impayes=true)}" th:text="#{cash.unpaid}">Impayés</a>
+      <a class="bouton principal" th:unless="${impayes}" target="_blank" rel="noopener" th:href="@{/caisse/cloture(jour=${jour})}"
+         th:title="#{cash.closing.help}" th:text="#{cash.closing}">Clôture du jour</a>
+      <a class="bouton" th:unless="${impayes}" th:href="@{/caisse/export/versements(du=${jour},au=${jour})}"
+         th:title="#{cash.export.day.help}" th:text="#{cash.export.day}">Export Excel</a>
+      <a class="bouton" th:unless="${impayes}" th:href="@{/caisse/export/consultations(du=${jour.withDayOfMonth(1)},au=${jour})}"
+         th:title="#{cash.export.month.help}" th:text="#{cash.export.month}">Export du mois</a>
+    </form>
+  </header>
+
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Succès</p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <div class="compteurs" th:unless="${impayes}">
+    <div class="carte compteur"><span class="compteur-valeur" th:text="${@monnaie.format(encaisse, devise)}">0</span>
+      <span class="compteur-libelle" th:text="#{cash.collected}">Encaissé ce jour</span></div>
+    <div class="carte compteur" th:each="t : ${parMode}"><span class="compteur-valeur" th:text="${@monnaie.format(t.montant, devise)}">0</span>
+      <span class="compteur-libelle" th:text="#{'cash.mode.' + ${t.mode}}">Espèces</span></div>
+    <div class="carte compteur accent"><span class="compteur-valeur" th:text="${@monnaie.format(du, devise)}">0</span>
+      <span class="compteur-libelle" th:text="#{cash.due}">Reste à encaisser</span></div>
+  </div>
+
+  <div class="carte caisse-liste">
+    <p class="vide" th:if="${#lists.isEmpty(lignes)}" th:text="${impayes} ? #{cash.unpaid.none} : #{cash.none}">Aucune.</p>
+    <details th:each="l : ${lignes}" class="rdv" th:with="vs=${versements.get(l.consultationId)}, e=${l.etatCode()}">
+      <summary>
+        <span class="heure" th:text="${impayes} ? ${#temporals.format(l.date, 'dd/MM/yy')} : #{dos.number(${'' + l.dossier})}">#</span>
+        <span class="ligne-texte"><strong th:text="${l.nomComplet()}">Patient</strong>
+          <small th:text="#{cash.totalPaid(${@monnaie.format(l.total, devise)}, ${@monnaie.format(l.verse, devise)})}">Total</small></span>
+        <span class="pastille" th:classappend="${e == 'PAYE'} ? 'vert' : (${e == 'PARTIEL'} ? 'ambre' : (${e == 'A_PAYER'} ? 'urgent' : ''))"
+              th:text="${e == 'PAYE' or e == 'SANS_ACTE'} ? #{'cash.state.' + ${e}} : #{'cash.state.' + ${e}} + ' · ' + ${@monnaie.format(l.reste(), devise)}">À payer</span>
+      </summary>
+      <div class="rdv-actions colonne-actions">
+        <ul class="liste versements" th:if="${vs != null}">
+          <li th:each="v : ${vs}" class="ligne">
+            <span class="heure" th:text="${#temporals.format(v.jour, 'dd/MM/yy')}">date</span>
+            <span class="ligne-texte" th:text="${@monnaie.format(v.montant, devise)} + ' · ' + #{'cash.mode.' + ${v.mode}} + ' · R-' + ${v.numero}">100 DH</span>
+            <details class="confirmer">
+              <summary class="bouton petit danger" th:text="#{appointment.cancel}">Annuler</summary>
+              <form th:action="@{/caisse/{c}/versements/{p}/annuler(c=${l.consultationId},p=${v.id})}" method="post">
+                <input type="hidden" name="retour" th:value="${retour}">
+                <button type="submit" class="bouton petit danger" th:text="#{cash.cancel.confirm}">Confirmer l’annulation</button>
+              </form>
+            </details>
+          </li>
+        </ul>
+        <form th:if="${@monnaie.positif(l.reste())}" class="encaisser" th:action="@{/caisse/{c}/encaisser(c=${l.consultationId})}" method="post">
+          <input type="hidden" name="retour" th:value="${retour}">
+          <label><th:block th:text="#{dos.pay.amount}">Montant</th:block> <input type="text" inputmode="decimal" name="montant" required th:value="${@monnaie.saisie(l.reste())}"></label>
+          <select name="mode" th:attr="aria-label=#{cash.mode}">
+            <option th:each="m : ${modes}" th:value="${m}" th:text="#{'cash.mode.' + ${m}}">Espèces</option>
+          </select>
+          <button type="submit" class="bouton principal petit" th:text="#{cash.collect}">Encaisser</button>
+        </form>
+        <span class="boutons-entete">
+          <a class="bouton petit" th:if="${@monnaie.positif(l.total)}" th:href="@{/caisse/{c}/facture(c=${l.consultationId})}" th:text="#{pat.invoice}">Facture</a>
+          <a class="bouton petit" target="_blank" rel="noopener" th:if="${@monnaie.positif(l.verse)}" th:href="@{/caisse/{c}/recu(c=${l.consultationId})}" th:text="#{cash.receipt}">Reçu</a>
+          <a class="bouton petit discret" th:href="@{/patients/{id}(id=${l.patientId})}" th:text="#{plan.patientFile}">Fiche patient</a>
+        </span>
+      </div>
+    </details>
+  </div>
+</main>
+</body>
+</html>

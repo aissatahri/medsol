@@ -1,0 +1,105 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'queue')}">
+<head><title th:text="#{nav.queue} + ' - MedSol'">Salle d'attente - MedSol</title></head>
+<body>
+<!-- Salle d'attente reprise de SGCM-Cardio Web -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.queue}">Salle d'attente</h1>
+      <p class="sous-titre" th:text="#{queue.count(${nbAttente})}">0 en attente</p>
+    </div>
+  </header>
+  <p th:if="${error}" class="alerte erreur" th:text="#{${error}}" role="alert">Erreur</p>
+
+  <div th:fragment="message" id="message" hx-swap-oob="true" role="status" aria-live="polite">
+    <p th:if="${message != null}" class="alerte" th:classappend="${message.erreur} ? 'erreur' : 'succes'"
+       th:text="${message.texte}">Message</p>
+  </div>
+
+  <div class="carte ajout">
+    <h2 th:text="#{queue.add}">Ajouter un patient</h2>
+    <div class="ajout-ligne">
+      <div class="recherche">
+        <input id="recherche-ajout" type="search" name="q" th:placeholder="#{queue.search}"
+               autocomplete="off" th:attr="aria-label=#{queue.search.label}"
+               th:hx-get="@{/queue/recherche}" hx-trigger="input changed delay:250ms, search"
+               hx-target="#trouves" hx-swap="outerHTML" hx-indicator="#chargement-ajout">
+        <span id="chargement-ajout" class="htmx-indicator chargement" aria-hidden="true"></span>
+      </div>
+      <label class="etat-ajout"><th:block th:text="#{queue.state}">État</th:block>
+        <select id="etat-ajout" name="etat">
+          <option value="NORMAL" th:text="#{queue.state.NORMAL}">Normal</option>
+          <option value="URGENT" th:text="#{queue.state.URGENT}">Urgent</option>
+          <option value="AGE" th:text="#{queue.state.AGE}">Âgé</option>
+          <option value="GRAVE" th:text="#{queue.state.GRAVE}">Grave</option>
+          <option value="AUTRE" th:text="#{queue.state.AUTRE}">Prioritaire</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="trouves" th:fragment="trouves">
+      <p class="vide" th:if="${q != null and q.length() >= 2 and #lists.isEmpty(trouves)}"
+         th:text="#{pat.list.noMatch(${q})}">Aucun</p>
+      <ul class="liste" th:unless="${trouves == null or #lists.isEmpty(trouves)}">
+        <li th:each="p : ${trouves}" class="ligne">
+          <span class="avatar" th:classappend="${p.sexe == 'F'} ? 'f' : 'm'" th:text="${p.initiales()}">AB</span>
+          <span class="ligne-texte">
+            <strong th:text="${p.nomComplet()}">Patient</strong>
+            <small th:text="${p.telephone} ?: ''">tél</small>
+          </span>
+          <span class="pastille ambre" th:if="${presents.contains(p.id)}" th:text="#{queue.alreadyIn}">Déjà dans la file</span>
+          <form th:unless="${presents.contains(p.id)}" th:hx-post="@{/queue}" hx-target="#file"
+                hx-include="#etat-ajout, #filtres" data-vider-recherche>
+            <input type="hidden" name="patientId" th:value="${p.id}">
+            <button type="submit" class="bouton principal petit" th:text="#{queue.add.submit}">Ajouter</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="carte">
+    <form id="filtres" class="filtres" th:hx-get="@{/queue/list}" hx-trigger="change" hx-target="#file">
+      <label><input type="checkbox" name="statuts" value="EN_ATTENTE" th:checked="${statuts.contains('EN_ATTENTE')}"> <th:block th:text="#{queue.status.EN_ATTENTE}">En attente</th:block></label>
+      <label><input type="checkbox" name="statuts" value="EN_CONSULTATION" th:checked="${statuts.contains('EN_CONSULTATION')}"> <th:block th:text="#{queue.status.EN_CONSULTATION}">En consultation</th:block></label>
+      <label><input type="checkbox" name="statuts" value="TERMINE" th:checked="${statuts.contains('TERMINE')}"> <th:block th:text="#{queue.filter.done}">Terminés</th:block></label>
+    </form>
+
+    <!-- Relue toutes les 10 s : arrivées depuis un autre poste ou le téléphone de l'assistante -->
+    <div id="file" th:fragment="file" th:hx-get="@{/queue/list}" hx-trigger="every 10s" hx-include="#filtres" hx-swap="outerHTML">
+      <p class="vide" th:if="${#lists.isEmpty(lignes)}" th:text="#{queue.none}">Aucun patient pour ces statuts aujourd'hui.</p>
+      <ul class="liste file" th:unless="${#lists.isEmpty(lignes)}">
+        <li th:each="f : ${lignes}" class="passage">
+          <span class="ticket" th:text="${f.numero}">1</span>
+          <a class="ligne-texte" th:href="@{/patients/{id}(id=${f.patientId})}">
+            <strong th:text="${f.patientName}">Patient</strong>
+            <small th:text="#{queue.arrived(${#temporals.format(f.arriveLe.atZone(cab.zone), 'HH:mm')})} + (${f.motif != null} ? ' · ' + ${f.motif} : '')">heure</small>
+          </a>
+          <span class="badges">
+            <span class="pastille urgent" th:if="${f.prioritaire()}" th:text="#{'queue.state.' + ${f.etat}}">Urgent</span>
+            <span class="pastille" th:classappend="${f.statut == 'EN_CONSULTATION'} ? 'bleu' : (${f.statut == 'TERMINE'} ? 'vert' : 'ambre')"
+                  th:text="#{'queue.status.' + ${f.statut}}">En attente</span>
+          </span>
+          <span class="actions">
+            <form th:hx-post="@{/queue/{id}/statut(id=${f.id})}" hx-target="#file" hx-include="#filtres">
+              <input type="hidden" name="attendu" th:value="${f.statut}">
+              <button th:if="${f.statut == 'EN_ATTENTE'}" type="submit" name="nouveau" value="EN_CONSULTATION" class="bouton petit" th:text="#{queue.status.EN_CONSULTATION}">En consultation</button>
+              <button th:if="${f.statut == 'EN_CONSULTATION'}" type="submit" name="nouveau" value="TERMINE" class="bouton petit" th:text="#{queue.finish}">Terminer</button>
+              <button th:if="${f.statut != 'EN_ATTENTE'}" type="submit" name="nouveau" value="EN_ATTENTE" class="bouton petit discret" th:text="#{queue.backToWaiting}">Remettre en attente</button>
+            </form>
+            <form th:hx-post="@{/queue/{id}/retirer(id=${f.id})}" hx-target="#file" hx-include="#filtres"
+                  th:attr="hx-confirm=#{queue.remove.confirm(${f.patientName})}">
+              <button type="submit" class="bouton petit danger" th:title="#{queue.remove.help}" th:attr="aria-label=#{dos.remove}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>
+              </button>
+            </form>
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</main>
+</body>
+</html>

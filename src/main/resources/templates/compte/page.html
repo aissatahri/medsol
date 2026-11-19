@@ -1,0 +1,99 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'compte')}">
+<head><title th:text="#{account.title} + ' - MedSol'">Mon compte - MedSol</title></head>
+<body>
+<!-- Mon compte : profil, mot de passe, double authentification (tous les rôles) -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{account.title}">Mon compte</h1>
+      <p class="sous-titre" th:text="${me.email}">e-mail</p>
+    </div>
+  </header>
+  <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+  <p class="alerte succes" role="status" th:if="${done}" th:text="#{${done}}"></p>
+  <p class="alerte info" role="status" th:if="${info}" th:text="#{${info}}"></p>
+  <p class="alerte info" role="status" th:if="${param.containsKey('2fa') and !me.totp}" th:text="#{account.2fa.mandatory}">
+    La double authentification est obligatoire pour les médecins : activez-la pour continuer.</p>
+
+  <div class="grille-compte">
+    <form class="carte formulaire" method="post" th:action="@{/compte/profil}">
+      <h2 th:text="#{account.profile}">Profil</h2>
+      <label><span th:text="#{users.name}">Nom complet</span>
+        <input name="fullName" required maxlength="150" th:value="${me.fullName}"></label>
+      <label><span th:text="#{account.language}">Langue</span>
+        <select name="langue">
+          <option value="fr" th:selected="${langue == 'fr'}" th:text="#{lang.fr}">Français</option>
+          <option value="en" th:selected="${langue == 'en'}" th:text="#{lang.en}">English</option>
+          <option value="es" th:selected="${langue == 'es'}" th:text="#{lang.es}">Español</option>
+        </select></label>
+      <button type="submit" class="bouton principal" th:text="#{account.save}">Enregistrer</button>
+    </form>
+
+    <form class="carte formulaire" method="post" th:action="@{/compte/mot-de-passe}">
+      <h2 th:text="#{account.password}">Mot de passe</h2>
+      <input type="email" name="username" th:value="${me.email}" autocomplete="username" hidden readonly>
+      <label><span th:text="#{account.password.current}">Mot de passe actuel</span>
+        <input type="password" name="ancien" required maxlength="100" autocomplete="current-password"></label>
+      <label><span th:text="#{users.newpassword}">Nouveau mot de passe</span>
+        <input type="password" name="password" required minlength="10" maxlength="100" autocomplete="new-password"></label>
+      <label><span th:text="#{users.confirm}">Confirmation</span>
+        <input type="password" name="confirmation" required minlength="10" maxlength="100" autocomplete="new-password"></label>
+      <small class="note" th:text="#{account.password.help}">Au moins 10 caractères. Vos autres appareils seront déconnectés.</small>
+      <button type="submit" class="bouton principal" th:text="#{users.reset}">Changer le mot de passe</button>
+    </form>
+
+    <section class="carte" id="deux-facteurs">
+      <h2 th:text="#{account.2fa}">Double authentification</h2>
+      <p class="note" th:text="#{account.2fa.help}">À chaque connexion, en plus du mot de passe, un code à 6 chiffres affiché par une application
+        sur votre téléphone (Google Authenticator, Microsoft Authenticator, FreeOTP…).</p>
+
+      <!-- Codes de secours : affichés une seule fois, juste après leur création -->
+      <div class="codes-secours" th:if="${codes != null}" role="alert">
+        <strong th:text="#{account.2fa.codes.title}">Vos codes de secours</strong>
+        <p class="note" th:text="#{account.2fa.codes.help}">Notez-les ou imprimez-les maintenant : ils ne seront plus affichés.</p>
+        <ol><li th:each="c : ${codes}"><code th:text="${c}">ABCDE-FGHJK</code></li></ol>
+      </div>
+
+      <th:block th:if="${me.totp}">
+        <p><span class="pastille vert" th:text="#{account.2fa.on}">Activée</span>
+          <small class="note" th:if="${codesRestants != null}" th:text="#{account.2fa.codes.left(${codesRestants})}">10 codes de secours restants</small></p>
+        <form method="post" th:action="@{/compte/2fa/codes}" class="formulaire">
+          <label><span th:text="#{account.password.current}">Mot de passe actuel</span>
+            <input type="password" name="ancien" required maxlength="100" autocomplete="current-password"></label>
+          <button type="submit" class="bouton petit" th:text="#{account.2fa.codes.renew}">Générer de nouveaux codes de secours</button>
+        </form>
+        <form method="post" th:action="@{/compte/2fa/desactiver}" class="formulaire" th:unless="${obligatoire}">
+          <label><span th:text="#{account.password.current}">Mot de passe actuel</span>
+            <input type="password" name="ancien" required maxlength="100" autocomplete="current-password"></label>
+          <button type="submit" class="bouton danger petit" th:text="#{account.2fa.disable}">Désactiver</button>
+        </form>
+        <p class="note" th:if="${obligatoire}" th:text="#{account.2fa.required}">Obligatoire pour les médecins.</p>
+      </th:block>
+
+      <th:block th:unless="${me.totp}">
+        <p><span class="pastille ambre" th:text="#{account.2fa.off}">Non activée</span></p>
+        <form method="post" th:action="@{/compte/2fa/preparer}" th:if="${qr == null}">
+          <button type="submit" class="bouton principal" th:text="#{account.2fa.enable}">Activer</button>
+        </form>
+        <div class="activation-2fa" th:if="${qr != null}">
+          <ol>
+            <li th:text="#{account.2fa.step1}">Ouvrez votre application d'authentification et scannez ce code :</li>
+          </ol>
+          <div class="qr-2fa" th:utext="${qr}"></div>
+          <p class="note"><span th:text="#{account.2fa.manual}">Ou saisissez la clé :</span> <code th:text="${secret}">ABCD EFGH</code></p>
+          <form method="post" th:action="@{/compte/2fa/activer}" class="formulaire">
+            <label><span th:text="#{account.2fa.step2}">Puis le code à 6 chiffres affiché :</span>
+              <input name="code" id="code-activation" class="code-2fa" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code" required
+                     data-cases th:attr="data-chiffre=#{twofa.digit},data-groupe=#{account.2fa.step2}"></label>
+            <script th:src="@{/js/code-2fa.js}" defer></script>
+            <button type="submit" class="bouton principal" th:text="#{account.2fa.confirm}">Confirmer l'activation</button>
+          </form>
+        </div>
+      </th:block>
+    </section>
+  </div>
+</main>
+</body>
+</html>

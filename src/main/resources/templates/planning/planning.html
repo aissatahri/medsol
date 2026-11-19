@@ -1,0 +1,190 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'appointments')}">
+<head><title th:text="#{nav.appointments} + ' - MedSol'">Planning - MedSol</title></head>
+<body>
+<!-- Planning repris de SGCM-Cardio Web (FullCalendar, tiroir du rendez-vous) -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.appointments}">Planning</h1>
+      <p class="sous-titre" th:if="${horairesDefinis}">
+        <span class="horaires-cabinet" th:text="#{plan.hours(${horairesTexte})}">Horaires</span>
+      </p>
+      <p class="sous-titre" th:unless="${horairesDefinis}">
+        <th:block th:text="#{plan.hours.none}">Aucun horaire défini : tous les jours sont affichés.</th:block>
+        <a th:if="${isDoctor}" th:href="@{/settings/horaires}" th:text="#{plan.hours.define}">Définir les horaires du cabinet</a>
+      </p>
+    </div>
+    <div class="navigation-semaine">
+      <a class="bouton" th:href="@{/planning/demandes}" th:classappend="${demandesEnLigne > 0} ? 'principal'" th:text="#{booking.requests(${demandesEnLigne})}">Demandes en ligne</a>
+      <a class="bouton" th:href="@{/planning/rappels}" th:title="#{plan.reminders.help}" th:text="#{plan.reminders}">Rappels de demain</a>
+      <button type="button" class="bouton principal" th:hx-get="@{/planning/nouveau}" hx-target="#panneau-contenu" hx-swap="innerHTML">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg> <th:block th:text="#{appointment.new}">Nouveau rendez-vous</th:block>
+      </button>
+    </div>
+  </header>
+
+  <div id="indicateurs" th:fragment="indicateurs" class="indicateurs">
+    <th:block th:if="${total != null}">
+      <span class="indicateur"><strong th:text="${total}">0</strong> <th:block th:text="#{plan.appointments}">rendez-vous</th:block></span>
+      <span th:each="s : ${parStatut}" th:if="${s.value > 0}" class="indicateur">
+        <i class="puce" th:style="'background:' + ${couleurs.get(s.key)[0]}"></i>
+        <span th:text="#{'appointment.status.' + ${s.key}} + ' : ' + ${s.value}">Planifié : 0</span>
+      </span>
+      <span class="indicateur" th:if="${total > 0}" th:text="#{plan.rates(${tauxAnnulation}, ${tauxAbsence})}">taux</span>
+    </th:block>
+  </div>
+
+  <div class="planning">
+    <div class="carte calendrier-carte">
+      <p class="aide-planning" th:text="#{plan.help}">Cliquez ou glissez sur un créneau libre pour créer un rendez-vous.</p>
+      <form id="filtres-statut" class="filtres legende" th:attr="aria-label=#{plan.statuses}">
+        <label><input type="checkbox" value="PLANIFIE" checked><i class="puce" style="background:#64748b"></i><th:block th:text="#{appointment.status.PLANIFIE}">Planifié</th:block></label>
+        <label><input type="checkbox" value="CONFIRME" checked><i class="puce" style="background:#1d4ed8"></i><th:block th:text="#{appointment.status.CONFIRME}">Confirmé</th:block></label>
+        <label><input type="checkbox" value="EN_COURS" checked><i class="puce" style="background:#047857"></i><th:block th:text="#{appointment.status.EN_COURS}">En cours</th:block></label>
+        <label><input type="checkbox" value="TERMINE" checked><i class="puce" style="background:#a7f3d0"></i><th:block th:text="#{appointment.status.TERMINE}">Terminé</th:block></label>
+        <label><input type="checkbox" value="REPORTE" checked><i class="puce" style="background:#f59e0b"></i><th:block th:text="#{appointment.status.REPORTE}">Reporté</th:block></label>
+        <label><input type="checkbox" value="ANNULE"><i class="puce" style="background:#fecaca"></i><th:block th:text="#{appointment.status.ANNULE}">Annulé</th:block></label>
+        <label><input type="checkbox" value="ABSENT"><i class="puce" style="background:#e5e7eb"></i><th:block th:text="#{appointment.status.ABSENT}">Absent</th:block></label>
+      </form>
+      <!-- Textes du calendrier : passés au script par attributs (pas de script en ligne : politique de sécurité) -->
+      <div id="calendrier"
+           th:data-evenements="@{/planning/evenements}"
+           th:data-indicateurs="@{/planning/indicateurs}"
+           th:data-panneau="@{/planning/}"
+           th:data-nouveau="@{/planning/nouveau}"
+           th:data-min="${heureMin}" th:data-max="${heureMax}"
+           th:data-horaires="${horairesJson}" th:data-fermes="${joursFermes}"
+           th:data-contraint="${horairesDefinis}"
+           th:data-langue="${#locale.language}"
+           th:data-t-today="#{plan.cal.today}" th:data-t-day="#{plan.cal.day}" th:data-t-week="#{plan.cal.week}"
+           th:data-t-month="#{plan.cal.month}" th:data-t-list="#{plan.cal.list}"
+           th:data-t-prev="#{plan.cal.prev}" th:data-t-next="#{plan.cal.next}"
+           th:data-t-none="#{plan.cal.none}" th:data-t-move-failed="#{plan.cal.moveFailed}"></div>
+    </div>
+  </div>
+
+  <!-- Tiroir du rendez-vous : s'ouvre à droite par-dessus le calendrier, qui garde toute la largeur -->
+  <div id="voile-panneau" class="voile" hidden></div>
+  <aside id="panneau" class="tiroir" th:attr="aria-label=#{dos.tab.appointments}" aria-live="polite" hidden>
+    <button type="button" class="fermer-tiroir" id="fermer-panneau" th:attr="aria-label=#{cons.close}" th:title="#{plan.close.help}">×</button>
+    <div id="panneau-contenu"></div>
+  </aside>
+
+  <!-- ── Morceaux renvoyés dans le panneau ───────────────────────────── -->
+  <th:block th:if="false">
+    <div th:fragment="panneau" class="rdv-panneau">
+      <p th:if="${message != null}" class="alerte" th:classappend="${erreurPanneau} ? 'erreur' : 'succes'" th:text="${message}">Message</p>
+      <h2 th:text="${r.nomComplet()}">Patient</h2>
+      <p class="sous-titre">
+        <span th:text="${#temporals.format(r.date, 'EEEE dd/MM/yyyy', #locale)}">jour</span>
+        <span th:text="' · ' + ${#temporals.format(r.debut, 'HH:mm')} + ' – ' + ${#temporals.format(r.fin, 'HH:mm')}"></span>
+      </p>
+      <p th:if="${!#strings.isEmpty(r.titre)}" th:text="${r.titre}">Motif</p>
+      <p th:if="${r.telephone != null}"><a th:href="'tel:' + ${#strings.replace(r.telephone, ' ', '')}" th:text="${r.telephone}">tél</a></p>
+
+      <!-- Parcours du rendez-vous -->
+      <ol class="parcours" th:with="s=${r.statut}">
+        <li th:classappend="${s != 'ANNULE' and s != 'ABSENT'} ? 'fait'" th:text="#{appointment.status.PLANIFIE}">Planifié</li>
+        <li th:classappend="${s == 'CONFIRME' or s == 'EN_COURS' or s == 'TERMINE'} ? 'fait'" th:text="#{appointment.status.CONFIRME}">Confirmé</li>
+        <li th:classappend="${s == 'EN_COURS' or s == 'TERMINE'} ? 'fait'" th:text="#{appointment.status.EN_COURS}">En cours</li>
+        <li th:classappend="${s == 'TERMINE'} ? 'fait'" th:text="#{appointment.status.TERMINE}">Terminé</li>
+      </ol>
+      <p><span class="pastille" th:classappend="'statut-' + ${#strings.toLowerCase(r.statut)}" th:text="#{'appointment.status.' + ${r.statut}}">Planifié</span></p>
+
+      <div class="rdv-actions-panneau">
+        <a class="bouton petit" th:href="${isDoctor} ? @{/patients/{id}/dossier(id=${r.patientId})} : @{/patients/{id}(id=${r.patientId})}" th:text="#{plan.patientFile}">Fiche patient</a>
+        <form th:if="${r.date == aujourdhui and r.actif() and r.statut != 'TERMINE' and r.statut != 'EN_COURS'}"
+              th:hx-post="@{/planning/{id}/arrive(id=${r.id})}" hx-target="#panneau-contenu" hx-swap="innerHTML">
+          <button type="submit" class="bouton petit principal" th:text="#{plan.arrived}">Arrivé → salle d'attente</button>
+        </form>
+        <form th:each="n : ${ {'CONFIRME', 'ANNULE', 'ABSENT'} }" th:if="${r.peut(n)}"
+              th:hx-post="@{/planning/{id}/statut(id=${r.id})}" hx-target="#panneau-contenu" hx-swap="innerHTML"
+              th:attr="hx-confirm=${n != 'CONFIRME'} ? (${n == 'ANNULE'} ? #{appointment.cancel.confirm} : #{plan.absent.confirm}) : null">
+          <input type="hidden" name="attendu" th:value="${r.statut}">
+          <input type="hidden" name="nouveau" th:value="${n}">
+          <button type="submit" class="bouton petit" th:classappend="${n != 'CONFIRME'} ? 'danger'"
+                  th:text="${n == 'CONFIRME'} ? #{appointment.confirm} : (${n == 'ANNULE'} ? #{appointment.cancel} : #{appointment.status.ABSENT})">Confirmer</button>
+        </form>
+      </div>
+      <form th:if="${r.peut('REPORTE')}" class="reporter-panneau" th:hx-post="@{/planning/{id}/reporter(id=${r.id})}" hx-target="#panneau-contenu" hx-swap="innerHTML">
+        <input type="hidden" name="attendu" th:value="${r.statut}">
+        <strong th:text="#{plan.postpone}">Reporter</strong>
+        <div class="ligne-champs">
+          <label><th:block th:text="#{appointment.date}">Date</th:block> <input type="date" name="date" required th:value="${r.date}"></label>
+          <label><th:block th:text="#{appointment.time}">Heure</th:block> <input type="time" name="heure" required step="300" th:value="${#temporals.format(r.debut, 'HH:mm')}"></label>
+        </div>
+        <label class="champ-clinique"><th:block th:text="#{plan.postpone.reason}">Motif du report</th:block> <input type="text" name="motif" maxlength="200" autocomplete="off"></label>
+        <button type="submit" class="bouton petit" th:text="#{plan.postpone}">Reporter</button>
+      </form>
+
+      <h3 th:text="#{users.history}">Historique</h3>
+      <p class="vide" th:if="${#lists.isEmpty(journal)}" th:text="#{plan.history.none}">Aucun changement enregistré.</p>
+      <ul class="liste journal" th:unless="${#lists.isEmpty(journal)}">
+        <li th:each="a : ${journal}">
+          <strong th:text="(${a.ancien != null} ? #{'appointment.status.' + ${a.ancien}} + ' → ' : '') + #{'appointment.status.' + ${a.nouveau}}">Planifié → Confirmé</strong>
+          <small th:text="${#temporals.format(a.quand.atZone(cab.zone), 'dd/MM/yyyy HH:mm')} + (${a.utilisateur != null} ? ' · ' + ${a.utilisateur} : '')">date</small>
+          <small th:if="${a.detail != null}" th:text="${a.detail}">détail</small>
+        </li>
+      </ul>
+    </div>
+
+    <form th:fragment="nouveau" class="formulaire-rdv" th:hx-post="@{/planning}" hx-target="#panneau-contenu" hx-swap="innerHTML">
+      <h2 th:text="#{appointment.new}">Nouveau rendez-vous</h2>
+      <p th:if="${erreur != null}" class="alerte erreur" th:text="${erreur}">Erreur</p>
+      <th:block th:if="${choisi != null}"><div th:replace="~{planning/planning :: choisi}"></div></th:block>
+      <div th:if="${choisi == null}" id="patient-rdv" class="champ-patient">
+        <div class="recherche">
+          <input type="search" name="q" th:placeholder="#{plan.patient.search}" autocomplete="off" th:attr="aria-label=#{plan.patient.search.label}" autofocus
+                 th:hx-get="@{/planning/patients}" hx-trigger="input changed delay:250ms, search" hx-target="#trouves-rdv" hx-swap="outerHTML">
+        </div>
+        <div id="trouves-rdv"></div>
+      </div>
+      <div class="ligne-champs">
+        <label><th:block th:text="#{appointment.date}">Date</th:block> <input type="date" name="date" required th:value="${date}"></label>
+        <label><th:block th:text="#{appointment.time}">Heure</th:block> <input type="time" name="heure" required step="300" th:value="${#temporals.format(heure, 'HH:mm')}"></label>
+        <label><th:block th:text="#{consultation.duration}">Durée</th:block>
+          <select name="duree">
+            <option th:each="m : ${ {15, 20, 30, 45, 60, 90} }" th:value="${m}" th:selected="${m == duree}" th:text="${m < 60} ? ${m} + ' min' : ${m / 60} + ' h' + (${m % 60 > 0} ? ${m % 60} : '')">30 min</option>
+          </select>
+        </label>
+      </div>
+      <label class="champ-clinique"><th:block th:text="#{queue.reason}">Motif</th:block> <input type="text" name="titre" maxlength="200" th:value="${titre}" th:placeholder="#{plan.reason.example}" autocomplete="off"></label>
+      <label class="forcer"><input type="checkbox" name="forcer" value="true"> <th:block th:text="#{plan.force}">Enregistrer quand même si le créneau est occupé</th:block></label>
+      <button type="submit" class="bouton principal" th:text="#{save}">Enregistrer</button>
+    </form>
+
+    <div th:fragment="trouves" id="trouves-rdv">
+      <ul class="liste choix" th:unless="${#lists.isEmpty(trouves)}">
+        <li th:each="p : ${trouves}">
+          <button type="button" class="choix-medicament" th:hx-get="@{/planning/patient/{id}(id=${p.id})}" hx-target="#patient-rdv" hx-swap="outerHTML">
+            <strong th:text="${p.nomComplet()}">Patient</strong>
+            <small th:text="${p.telephone} ?: ''">tél</small>
+          </button>
+        </li>
+      </ul>
+      <p class="vide" th:if="${q.length() >= 2 and #lists.isEmpty(trouves)}" th:text="#{plan.patient.none}">Aucun patient trouvé.</p>
+    </div>
+
+    <div id="patient-rdv" th:fragment="choisi" class="champ-patient choisi">
+      <input type="hidden" name="patientId" th:value="${choisi.id}">
+      <span class="avatar" th:classappend="${choisi.sexe == 'F'} ? 'f' : 'm'" th:text="${choisi.initiales()}">AB</span>
+      <span class="ligne-texte"><strong th:text="${choisi.nomComplet()}">Patient</strong>
+        <small th:text="${choisi.telephone} ?: ''">tél</small></span>
+      <button type="button" class="bouton petit discret" th:hx-get="@{/planning/nouveau}" hx-target="#panneau-contenu" hx-swap="innerHTML" th:text="#{plan.change}">Changer</button>
+    </div>
+
+    <div th:fragment="confirmation">
+      <p class="alerte succes" th:text="${message}">Enregistré</p>
+      <button type="button" class="bouton" th:hx-get="@{/planning/nouveau}" hx-target="#panneau-contenu" hx-swap="innerHTML" th:text="#{appointment.new}">Nouveau rendez-vous</button>
+    </div>
+  </th:block>
+
+  <script th:src="@{/js/fullcalendar/fullcalendar.min.js}" defer></script>
+  <script th:src="@{/js/fullcalendar/fr.min.js}" defer></script>
+  <script th:src="@{/js/fullcalendar/es.min.js}" defer></script>
+  <script th:src="@{/js/planning.js}" defer></script>
+</main>
+</body>
+</html>

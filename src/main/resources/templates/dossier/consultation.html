@@ -1,0 +1,294 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Morceaux de la consultation repris de SGCM-Cardio Web (consultation/page.html) : chacun se met à jour seul (htmx). -->
+
+<!-- ── Constantes et résultats cliniques : valeurs en pastilles, saisie dans une fenêtre (comme le bureau) ── -->
+<form id="formulaire" th:fragment="formulaire" class="carte formulaire-consultation"
+      th:hx-post="@{/consultations/{id}(id=${consultation.id})}" hx-target="#formulaire" hx-swap="outerHTML"
+      hx-indicator="#enregistrement">
+  <p th:if="${message != null}" class="alerte message-saisie" th:classappend="${message.erreur} ? 'erreur' : 'succes'"
+     th:text="${message.texte}" role="status">Enregistré</p>
+  <div class="bloc-constantes">
+    <div class="bloc-tete">
+      <h2 th:text="#{cons.vitals}">Constantes vitales</h2>
+      <button type="button" class="bouton bleu" data-ouvrir="saisie-constantes"><th:block th:text="#{cons.vitals.enter}">Saisir les constantes</th:block> <span aria-hidden="true">⊕</span></button>
+    </div>
+    <div class="pastilles-constantes">
+      <th:block th:each="tc : ${typesConstantes}">
+        <span class="pastille-constante" th:if="${!tc.complexe() and !#strings.isEmpty(saisie.simples().get(tc.id))}">
+          <span th:text="${tc.label}">Poids</span>
+          <b th:text="${saisie.simples().get(tc.id)}">80</b> <small th:text="${tc.unite}">kg</small></span>
+        <th:block th:if="${tc.complexe() and saisie.complexes().get(tc.id) != null}">
+          <span class="pastille-constante" th:each="k : ${tc.cles()}" th:unless="${#strings.isEmpty(saisie.complexes().get(tc.id).get(k.cle()))}">
+            <span th:text="${k.label()}">AT Bras G</span>
+            <b th:text="${saisie.complexes().get(tc.id).get(k.cle())}">130/80</b> <small th:text="${k.unite()}">mm Hg</small></span>
+        </th:block>
+      </th:block>
+      <span class="vide seul-si-vide" th:text="#{cons.vitals.none}">Aucune constante saisie.</span>
+    </div>
+    <dialog id="saisie-constantes" class="fenetre-saisie" aria-labelledby="titre-saisie-constantes">
+      <h2 id="titre-saisie-constantes" th:text="#{cons.vitals}">Constantes vitales</h2>
+      <div class="grille-constantes">
+        <th:block th:each="tc : ${typesConstantes}">
+          <label th:unless="${tc.complexe()}" class="constante" th:classappend="${tc.calcule()} ? 'calculee'">
+            <span th:text="${tc.label}">Poids</span>
+            <span class="champ-unite">
+              <input th:unless="${tc.calcule()}" type="text" inputmode="decimal" autocomplete="off" maxlength="30"
+                     th:name="'s_' + ${tc.id}" th:value="${saisie.simples().get(tc.id)}">
+              <output th:if="${tc.calcule()}" th:text="${saisie.simples().get(tc.id)} ?: '—'">—</output>
+              <small th:text="${tc.unite}">kg</small>
+            </span>
+          </label>
+          <fieldset th:if="${tc.complexe()}" class="constante complexe">
+            <legend th:text="${tc.label}">Tension</legend>
+            <label th:each="k : ${tc.cles()}">
+              <span th:text="${k.label()}">Bras G</span>
+              <span class="champ-unite">
+                <input type="text" autocomplete="off" th:placeholder="#{cons.example.bp}" maxlength="30"
+                       th:name="'x_' + ${tc.id} + '_' + ${k.cle()}"
+                       th:value="${saisie.complexes().get(tc.id) != null} ? ${saisie.complexes().get(tc.id).get(k.cle())} : ''">
+                <small th:text="${k.unite()}">mm Hg</small>
+              </span>
+            </label>
+          </fieldset>
+        </th:block>
+      </div>
+      <div class="actions-fenetre">
+        <button type="button" class="bouton" data-fermer th:text="#{cancel}">Annuler</button>
+        <button type="submit" class="bouton principal" th:text="#{save}">Enregistrer</button>
+      </div>
+    </dialog>
+  </div>
+
+  <div class="bloc-clinique">
+    <div class="bloc-tete">
+      <h2 th:text="#{cons.clinical}">Résultats cliniques</h2>
+      <button type="button" class="bouton succes" data-ouvrir="saisie-clinique"><th:block th:text="#{cons.clinical.enter}">Saisir les résultats</th:block> <span aria-hidden="true">⊕</span></button>
+    </div>
+    <div class="resultats-cliniques">
+      <div class="resultat-clinique" th:each="tc : ${typesChamps}" th:unless="${#strings.isEmpty(saisie.champs().get(tc.id))}">
+        <h3 th:text="${tc.label}">Symptômes</h3>
+        <p th:text="${saisie.champs().get(tc.id)}">Texte</p>
+      </div>
+      <span class="vide seul-si-vide" th:text="#{cons.clinical.none}">Aucun résultat clinique saisi.</span>
+    </div>
+    <dialog id="saisie-clinique" class="fenetre-saisie large" aria-labelledby="titre-saisie-clinique">
+      <h2 id="titre-saisie-clinique" th:text="#{cons.clinical}">Résultats cliniques</h2>
+      <div class="champs-cliniques">
+        <label th:each="tc : ${typesChamps}" class="champ-clinique">
+          <span th:text="${tc.label}">Symptômes</span>
+          <textarea rows="3" th:name="'c_' + ${tc.id}" th:text="${saisie.champs().get(tc.id)}"></textarea>
+        </label>
+      </div>
+      <div class="actions-fenetre">
+        <button type="button" class="bouton" data-fermer th:text="#{cancel}">Annuler</button>
+        <button type="submit" class="bouton principal" th:text="#{save}">Enregistrer</button>
+      </div>
+    </dialog>
+  </div>
+  <span id="enregistrement" class="htmx-indicator chargement en-ligne" aria-hidden="true"></span>
+</form>
+
+<!-- ── Ordonnance ─────────────────────────────────────────────────────────── -->
+<div id="ordonnance" th:fragment="ordonnance" class="carte">
+  <h2 class="titre-lien"><th:block th:text="#{cons.rx}">Ordonnance</th:block>
+    <span class="boutons-entete">
+      <button type="button" class="bouton petit bleu" th:hx-get="@{/consultations/{c}/ordonnance/modeles(c=${consultation.id})}"
+              hx-target="#modeles" hx-swap="outerHTML" th:text="#{cons.rx.templates}">Ordonnances types</button>
+      <a th:unless="${#lists.isEmpty(lignes)}" class="bouton petit" target="_blank" rel="noopener"
+         th:href="@{/consultations/{c}/documents/ordonnance(c=${consultation.id})}" th:text="#{dos.print}">Imprimer</a>
+    </span>
+  </h2>
+  <p th:if="${messageOrdonnance != null}" class="alerte" th:classappend="${messageOrdonnance.erreur} ? 'erreur' : 'succes'"
+     th:text="${messageOrdonnance.texte}" role="status">Message</p>
+
+  <div id="modeles"></div>
+
+  <div th:replace="~{dossier/consultation :: alertes(${alertes})}"></div>
+
+  <p class="vide" th:if="${#lists.isEmpty(lignes)}" th:text="#{consultation.prescription.none}">Aucun médicament prescrit.</p>
+  <ul class="liste ordonnance" th:unless="${#lists.isEmpty(lignes)}">
+    <li th:each="l : ${lignes}" th:id="'ligne-' + ${l.id}" class="ligne-ordonnance">
+      <span class="ligne-texte">
+        <span class="medicament-nom"><strong th:text="${l.medicament}">Médicament</strong>
+          <span class="dosage" th:unless="${#strings.isEmpty(l.forme)}" th:text="${l.forme}">5 mg</span></span>
+        <small th:text="${l.details()}">1 cp/j - 30 jours</small>
+      </span>
+      <span class="actions">
+        <button type="button" class="bouton petit discret"
+                th:hx-get="@{/consultations/{c}/ordonnance/{l}/modifier(c=${consultation.id},l=${l.id})}"
+                th:hx-target="'#ligne-' + ${l.id}" hx-swap="outerHTML" th:text="#{dos.edit}">Modifier</button>
+        <form th:hx-post="@{/consultations/{c}/ordonnance/{l}/supprimer(c=${consultation.id},l=${l.id})}"
+              hx-target="#ordonnance" th:hx-confirm="#{cons.rx.remove.confirm(${l.medicament})}">
+          <button type="submit" class="bouton petit danger" th:attr="aria-label=#{dos.remove}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>
+          </button>
+        </form>
+      </span>
+    </li>
+  </ul>
+
+  <form th:if="${#lists.isEmpty(lignes) and precedente != null}" class="reprendre"
+        th:hx-post="@{/consultations/{c}/ordonnance/reprendre(c=${consultation.id})}" hx-target="#ordonnance">
+    <button type="submit" class="bouton" th:text="#{cons.rx.previous}">Reprendre l'ordonnance précédente</button>
+  </form>
+
+  <!-- Enregistrer l'ordonnance en cours comme ordonnance type (réutilisable dans les autres consultations) -->
+  <details class="enregistrer-modele" th:unless="${#lists.isEmpty(lignes)}">
+    <summary th:text="#{cons.rx.saveTemplate}">Enregistrer cette ordonnance comme ordonnance type</summary>
+    <form th:hx-post="@{/consultations/{c}/ordonnance/modeles(c=${consultation.id})}" hx-target="#ordonnance">
+      <input type="text" name="nom" required maxlength="100" th:placeholder="#{cons.rx.templateName.example}" th:attr="aria-label=#{cons.rx.templateName}" autocomplete="off">
+      <button type="submit" class="bouton petit succes" th:text="#{save}">Enregistrer</button>
+    </form>
+  </details>
+
+  <div class="ajout-medicament">
+    <div class="recherche">
+      <input type="search" name="q" th:placeholder="#{cons.rx.search}" autocomplete="off"
+             th:attr="aria-label=#{cons.rx.search.label}"
+             th:hx-get="@{/consultations/{c}/medicaments(c=${consultation.id})}"
+             hx-trigger="input changed delay:250ms, search" hx-target="#choix" hx-swap="outerHTML"
+             hx-indicator="#chargement-med">
+      <span id="chargement-med" class="htmx-indicator chargement" aria-hidden="true"></span>
+    </div>
+    <div id="choix"></div>
+  </div>
+</div>
+
+<!-- Résultats de la recherche dans le catalogue -->
+<div id="choix" th:fragment="choix">
+  <p class="vide" th:if="${qMedicament != null and qMedicament.length() >= 2 and #lists.isEmpty(medicaments)}" th:text="#{cons.rx.notFound}">Aucun médicament trouvé dans le catalogue.</p>
+  <ul class="liste choix" th:unless="${medicaments == null or #lists.isEmpty(medicaments)}">
+    <li th:each="m : ${medicaments}">
+      <button type="button" class="choix-medicament"
+              th:hx-get="@{/consultations/{c}/ordonnance/nouvelle(c=${consultation.id},medicamentId=${m.id})}"
+              hx-target="#choix" hx-swap="outerHTML">
+        <!-- Le dosage à côté du nom : plusieurs médicaments du catalogue portent le même nom -->
+        <span class="medicament-nom"><strong th:text="${m.nom}">Médicament</strong>
+          <span class="dosage" th:unless="${#strings.isEmpty(m.forme)}" th:text="${m.forme}">5 mg</span></span>
+        <small th:text="${#strings.isEmpty(m.dci)} ? ${m.presentation} : ${m.dci} + (${#strings.isEmpty(m.presentation)} ? '' : ' · ' + ${m.presentation})">DCI</small>
+      </button>
+    </li>
+  </ul>
+  <!-- Absent du catalogue : l'ajouter et le prescrire sans quitter la consultation -->
+  <button type="button" class="ajout-catalogue" th:if="${proposerAjout}"
+          th:hx-get="@{/consultations/{c}/ordonnance/catalogue(c=${consultation.id},nom=${qMedicament})}" hx-target="#choix" hx-swap="outerHTML">
+    <span class="plus" aria-hidden="true">+</span>
+    <span><strong th:text="#{cons.rx.addToCatalogue(${qMedicament})}">Ajouter</strong>
+      <small th:text="#{cons.rx.addToCatalogue.help}">Il sera proposé dans toutes les consultations du cabinet.</small></span>
+  </button>
+</div>
+
+<!-- Médicament absent du catalogue : ajouté au catalogue du cabinet et prescrit en une fois -->
+<form id="choix" th:fragment="nouveauMedicament" class="nouvelle-ligne catalogue"
+      th:hx-post="@{/consultations/{c}/ordonnance/catalogue(c=${consultation.id})}" hx-target="#ordonnance" hx-swap="outerHTML">
+  <strong th:text="#{cons.rx.new}">Nouveau médicament</strong>
+  <p th:if="${erreurCatalogue != null}" class="alerte erreur" th:text="${erreurCatalogue}">Erreur</p>
+  <div class="ligne-champs">
+    <label><th:block th:text="#{cons.rx.name}">Nom *</th:block> <input type="text" name="nom" required minlength="2" maxlength="200" th:value="${nomPropose}" autocomplete="off"></label>
+    <label><th:block th:text="#{cons.rx.form}">Forme et dosage</th:block> <input type="text" name="forme" maxlength="200" th:placeholder="#{cons.rx.form.example}" autocomplete="off" autofocus></label>
+    <label><th:block th:text="#{cons.rx.inn}">DCI</th:block> <input type="text" name="dci" maxlength="200" th:placeholder="#{cons.rx.inn.example}" autocomplete="off"></label>
+  </div>
+  <div class="ligne-champs">
+    <label><th:block th:text="#{consultation.dosage}">Posologie</th:block> <input type="text" name="dose" maxlength="300" th:placeholder="#{cons.rx.dose.example}" autocomplete="off"></label>
+    <label><th:block th:text="#{consultation.duration}">Durée</th:block> <input type="text" name="duree" maxlength="300" th:placeholder="#{cons.rx.duration.example}" autocomplete="off"></label>
+    <label><th:block th:text="#{cons.rx.remark}">Remarque</th:block> <input type="text" name="remarque" maxlength="300" th:placeholder="#{cons.rx.remark.example}" autocomplete="off"></label>
+  </div>
+  <div class="actions">
+    <button type="button" class="bouton petit discret" th:hx-get="@{/consultations/{c}/ordonnance(c=${consultation.id})}"
+            hx-target="#ordonnance" hx-swap="outerHTML" th:text="#{cancel}">Annuler</button>
+    <button type="submit" class="bouton petit principal" th:text="#{cons.rx.addAndPrescribe}">Ajouter au catalogue et prescrire</button>
+  </div>
+</form>
+
+<!-- Panneau des ordonnances types : choisir un modèle l'ajoute à l'ordonnance -->
+<div id="modeles" th:fragment="modeles" class="panneau-modeles">
+  <div class="titre-lien">
+    <strong th:text="#{cons.rx.templates}">Ordonnances types</strong>
+    <button type="button" class="bouton petit discret" data-fermer-panneau th:text="#{cons.close}">Fermer</button>
+  </div>
+  <p th:if="${messageModeles != null}" class="alerte" th:classappend="${messageModeles.erreur} ? 'erreur' : 'succes'"
+     th:text="${messageModeles.texte}" role="status">Message</p>
+  <p class="vide" th:if="${#lists.isEmpty(modeles)}" th:text="#{cons.rx.templates.none}">Aucune ordonnance type.</p>
+  <ul class="liste modeles" th:unless="${#lists.isEmpty(modeles)}">
+    <li th:each="m : ${modeles}" class="modele">
+      <!-- Chaque ligne est cochée par défaut : « Utiliser » ajoute les lignes cochées -->
+      <form class="modele-corps" th:hx-post="@{/consultations/{c}/ordonnance/modeles/{m}/appliquer(c=${consultation.id},m=${m.id})}" hx-target="#ordonnance">
+        <details>
+          <summary>
+            <span class="ligne-texte">
+              <strong th:text="${m.nom}">HTA débutante</strong>
+              <small th:text="${m.apercu()}">Amlor · Bisoprolol</small>
+            </span>
+          </summary>
+          <ul class="detail-modele">
+            <li th:each="l : ${m.lignes}">
+              <label>
+                <input type="checkbox" name="lignes" th:value="${l.id}" checked>
+                <span th:text="${l.libelle()}">Amlor 5 mg</span>
+                <small th:if="${!#strings.isEmpty(l.details())}" th:text="${l.details()}">1 cp/j - 3 mois</small>
+              </label>
+            </li>
+          </ul>
+        </details>
+        <button type="submit" class="bouton petit succes" th:text="#{cons.rx.use}">Utiliser</button>
+      </form>
+      <button type="button" class="bouton petit danger" th:attr="aria-label=#{cons.rx.template.delete}"
+              th:hx-post="@{/consultations/{c}/ordonnance/modeles/{m}/supprimer(c=${consultation.id},m=${m.id})}"
+              hx-target="#modeles" th:hx-confirm="#{cons.rx.template.delete.confirm(${m.nom})}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>
+      </button>
+    </li>
+  </ul>
+</div>
+
+<!-- Formulaire d'une nouvelle ligne, remplace la liste de choix -->
+<form id="choix" th:fragment="nouvelleLigne" class="nouvelle-ligne"
+      th:hx-post="@{/consultations/{c}/ordonnance(c=${consultation.id})}" hx-target="#ordonnance" hx-swap="outerHTML">
+  <input type="hidden" name="medicamentId" th:value="${medicament.id}">
+  <span class="medicament-nom"><strong th:text="${medicament.nom}">Médicament</strong>
+    <span class="dosage" th:unless="${#strings.isEmpty(medicament.forme)}" th:text="${medicament.forme}">5 mg</span></span>
+  <div th:replace="~{dossier/consultation :: alertes(${alertesAjout})}"></div>
+  <div class="ligne-champs">
+    <label><th:block th:text="#{consultation.dosage}">Posologie</th:block> <input type="text" name="dose" maxlength="300" th:placeholder="#{cons.rx.dose.example}" autocomplete="off" autofocus></label>
+    <label><th:block th:text="#{consultation.duration}">Durée</th:block> <input type="text" name="duree" maxlength="300" th:placeholder="#{cons.rx.duration.example}" autocomplete="off"></label>
+    <label><th:block th:text="#{cons.rx.remark}">Remarque</th:block> <input type="text" name="remarque" maxlength="300" autocomplete="off"></label>
+  </div>
+  <div class="actions">
+    <button type="button" class="bouton petit discret" th:hx-get="@{/consultations/{c}/ordonnance(c=${consultation.id})}"
+            hx-target="#ordonnance" hx-swap="outerHTML" th:text="#{cancel}">Annuler</button>
+    <button type="submit" class="bouton petit principal" th:text="#{queue.add.submit}">Ajouter</button>
+  </div>
+</form>
+
+<!-- Ligne en cours de modification -->
+<form th:fragment="ligneEdition" th:id="'ligne-' + ${l.id}" class="nouvelle-ligne"
+      th:hx-post="@{/consultations/{c}/ordonnance/{l}(c=${consultation.id},l=${l.id})}" hx-target="#ordonnance" hx-swap="outerHTML">
+  <span class="medicament-nom"><strong th:text="${l.medicament}">Médicament</strong>
+    <span class="dosage" th:unless="${#strings.isEmpty(l.forme)}" th:text="${l.forme}">5 mg</span></span>
+  <div class="ligne-champs">
+    <label><th:block th:text="#{consultation.dosage}">Posologie</th:block> <input type="text" name="dose" maxlength="300" th:value="${l.dose}" autocomplete="off" autofocus></label>
+    <label><th:block th:text="#{consultation.duration}">Durée</th:block> <input type="text" name="duree" maxlength="300" th:value="${l.duree}" autocomplete="off"></label>
+    <label><th:block th:text="#{cons.rx.remark}">Remarque</th:block> <input type="text" name="remarque" maxlength="300" th:value="${l.remarque}" autocomplete="off"></label>
+  </div>
+  <div class="actions">
+    <button type="button" class="bouton petit discret" th:hx-get="@{/consultations/{c}/ordonnance(c=${consultation.id})}"
+            hx-target="#ordonnance" hx-swap="outerHTML" th:text="#{cancel}">Annuler</button>
+    <button type="submit" class="bouton petit principal" th:text="#{save}">Enregistrer</button>
+  </div>
+</form>
+<!-- Alertes de prescription : allergies, doublons, interactions, âge, poids de l'enfant (jamais bloquantes) -->
+<div th:fragment="alertes(liste)" class="alertes-prescription" th:if="${liste != null and !#lists.isEmpty(liste)}" role="alert">
+  <ul>
+    <li th:each="a : ${liste}" th:classappend="'niveau-' + ${a.css()}">
+      <span class="pastille" th:classappend="${a.css()}" th:text="#{'alert.level.' + ${a.niveau}}">Contre-indication</span>
+      <strong th:text="${a.titre}">Allergie connue</strong>
+      <span th:text="${a.detail}">détail</span>
+      <small class="note" th:if="${#lists.size(a.medicaments) > 1}" th:text="${#strings.listJoin(a.medicaments, ' + ')}">A + B</small>
+    </li>
+  </ul>
+  <small class="note" th:text="#{alert.disclaimer}">Aide à la décision, liste non exhaustive.</small>
+</div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.acts} + ' - MedSol'">Actes - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page"><div><h1 th:text="#{nav.settings}">Paramètres</h1></div></header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('actes')}"></nav>
+    <div class="carte parametres-section ancien">
+    <p class="error" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+    <p class="ok" role="status" th:if="${done}" th:text="#{${done}}"></p>
+
+    <table class="table" th:unless="${#lists.isEmpty(actes)}">
+        <thead><tr><th th:text="#{actes.name}">Acte</th><th th:text="#{actes.price} + ' (' + ${@monnaie.symbole(devise)} + ')'">Tarif</th><th th:text="#{actes.active}">Proposé</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="a : ${actes}">
+            <td th:text="${a.nom}">Consultation</td>
+            <td colspan="3">
+                <form th:action="@{/settings/actes/{id}(id=${a.id})}" method="post" class="actions">
+                    <input type="text" inputmode="decimal" name="prix" th:value="${@monnaie.saisie(a.prix)}" th:attr="aria-label=${a.nom}" required>
+                    <label class="check"><input type="checkbox" name="actif" value="true" th:checked="${a.actif}"> <span th:text="#{actes.active}">Proposé</span></label>
+                    <button class="btn ghost" type="submit" th:text="#{save}">Enregistrer</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="muted" th:if="${#lists.isEmpty(actes)}" th:text="#{actes.none}">Aucun acte.</p>
+
+    <form th:action="@{/settings/actes}" method="post" class="card form gap-top">
+        <h2 th:text="#{actes.add}">Ajouter un acte</h2>
+        <div class="grid">
+            <div><label for="nom" th:text="#{actes.name}">Acte</label><input id="nom" name="nom" required maxlength="150"></div>
+            <div><label for="prix" th:text="#{actes.price}">Tarif</label><input id="prix" name="prix" inputmode="decimal" required></div>
+        </div>
+        <p class="muted" th:text="#{actes.help}">Changer un tarif ne modifie pas les consultations déjà facturées.</p>
+        <div class="actions"><button class="btn" type="submit" th:text="#{actes.add}">Ajouter</button></div>
+    </form>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="#{exp.title} + ' — ' + ${patient['nom']} + ' ' + ${patient['prenom']}">Dossier médical</title>
+  <!-- Fichier autonome remis au patient : styles intégrés, aucun lien vers MedSol ; dans la langue de qui l'exporte -->
+  <style>
+    body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 0 auto; max-width: 900px; padding: 24px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.15rem; border-bottom: 2px solid #0b1730; padding-bottom: 4px; margin-top: 28px; }
+    h3 { font-size: 1rem; margin: 18px 0 6px; }
+    .note { color: #475569; font-size: .9rem; }
+    table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+    th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    th { width: 34%; color: #334155; font-weight: 600; }
+    .consultation { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; margin: 12px 0; page-break-inside: avoid; }
+    .supprimee { opacity: .6; }
+    ul { margin: 4px 0; padding-left: 20px; }
+    @media print { body { padding: 0; } a { color: inherit; text-decoration: none; } }
+  </style>
+</head>
+<body>
+  <h1 th:text="#{exp.title}">Dossier médical</h1>
+  <p class="note" th:text="#{exp.intro(${racine['cabinet']['nom']}, ${#strings.substring(racine['exporte_le'], 0, 10)}, ${racine['exporte_par']})}">
+    Cabinet — exporté le … par …
+  </p>
+
+  <h2 th:text="#{exp.identity}">Identité</h2>
+  <table>
+    <tr th:each="e : ${patient}" th:if="${e.value != null and e.value != '' and e.key != 'id'}">
+      <th th:text="${#strings.capitalize(#strings.replace(e.key, '_', ' '))}">nom</th>
+      <td th:text="${e.value}">valeur</td>
+    </tr>
+  </table>
+
+  <h2 th:text="#{dos.allergies}">Allergies</h2>
+  <p th:if="${#lists.isEmpty(allergies)}" class="note" th:text="#{dos.allergies.none}">Aucune allergie connue.</p>
+  <ul th:unless="${#lists.isEmpty(allergies)}">
+    <li th:each="a : ${allergies}"><strong th:text="${a.nom}">Pénicilline</strong>
+      <span class="note" th:if="${a.date != null}" th:text="'(' + #{exp.since(${#temporals.format(a.date, 'dd/MM/yyyy')})} + ')'"></span></li>
+  </ul>
+
+  <h2 th:text="#{pat.history}">Antécédents</h2>
+  <p th:if="${#lists.isEmpty(antecedents)}" class="note" th:text="#{dos.history.none}">Aucun antécédent enregistré.</p>
+  <table th:unless="${#lists.isEmpty(antecedents)}">
+    <tr th:each="a : ${antecedents}">
+      <th th:text="#{'antecedent.' + ${a.type}}">Médical</th>
+      <td><span th:text="${a.description}">HTA</span>
+        <span class="note" th:if="${a.date != null}" th:text="' — ' + ${#temporals.format(a.date, 'dd/MM/yyyy')}"></span>
+        <span class="note" th:if="${a.note != null and a.note != ''}" th:text="' — ' + ${a.note}"></span></td>
+    </tr>
+  </table>
+
+  <h2><th:block th:text="#{dos.consultations}">Consultations</th:block> <span class="note" th:text="'(' + ${#lists.size(visites)} + ')'">(0)</span></h2>
+  <p th:if="${#lists.isEmpty(visites)}" class="note" th:text="#{consultation.none}">Aucune consultation.</p>
+  <div class="consultation" th:each="v : ${visites}">
+    <h3><span th:text="${#temporals.format(v.visite.date, 'dd/MM/yyyy')}">01/01/2026</span>
+      <span th:if="${v.visite.motif != null and v.visite.motif != ''}" th:text="' — ' + ${v.visite.motif}">motif</span></h3>
+    <table th:unless="${#lists.isEmpty(v.champs)}">
+      <tr th:each="c : ${v.champs}"><th th:text="${c.libelle}">Examen clinique</th><td th:text="${c.valeur}" style="white-space: pre-line">texte</td></tr>
+    </table>
+    <table th:unless="${#lists.isEmpty(v.constantes)}">
+      <tr th:each="c : ${v.constantes}">
+        <th th:text="${c.libelle} + (${c.cle != null and c.cle != ''} ? ' — ' + ${c.cle} : '')">Tension</th>
+        <td th:text="${c.valeur} + (${c.unite != null} ? ' ' + ${c.unite} : '')">12/8</td>
+      </tr>
+    </table>
+    <th:block th:unless="${#lists.isEmpty(v.prescriptions)}">
+      <strong th:text="#{cons.rx}">Ordonnance</strong>
+      <ul><li th:each="p : ${v.prescriptions}"><span th:text="${p.medicament}">Médicament</span> <span class="note" th:text="${p.details()}">1 cp/j</span></li></ul>
+    </th:block>
+    <th:block th:unless="${#lists.isEmpty(v.analyses)}">
+      <strong th:text="#{dos.tab.analyses}">Analyses</strong>
+      <ul><li th:each="x : ${v.analyses}"><span th:text="${x.intitule()}">NFS</span>
+        <span class="note" th:if="${x.aResultat()}" th:text="' — ' + #{exp.result(${x.resultat})}"></span></li></ul>
+    </th:block>
+    <th:block th:unless="${#lists.isEmpty(v.imageries)}">
+      <strong th:text="#{dos.tab.imaging}">Imagerie</strong>
+      <ul><li th:each="x : ${v.imageries}"><span th:text="${x.intitule()}">Radio</span>
+        <span class="note" th:if="${x.aResultat()}" th:text="' — ' + #{exp.result(${x.resultat})}"></span></li></ul>
+    </th:block>
+  </div>
+
+  <h2 th:text="#{dos.tab.appointments}">Rendez-vous</h2>
+  <p th:if="${#lists.isEmpty(rendezVous)}" class="note" th:text="#{dos.rdv.none}">Aucun rendez-vous.</p>
+  <ul th:unless="${#lists.isEmpty(rendezVous)}">
+    <li th:each="r : ${rendezVous}" th:text="${r['debut'] != null ? #strings.replace(#strings.substring(r['debut'], 0, 16), 'T', ' ') : ''} + (${r['statut'] != null} ? ' — ' + #{'appointment.status.' + ${r['statut']}} : '') + (${r['motif'] != null} ? ' — ' + ${r['motif']} : '')">rdv</li>
+  </ul>
+
+  <h2 th:text="#{files.title}">Fichiers joints</h2>
+  <p th:if="${#lists.isEmpty(fichiers)}" class="note" th:text="#{files.none}">Aucun fichier.</p>
+  <ul th:unless="${#lists.isEmpty(fichiers)}">
+    <li th:each="f : ${fichiers}"><a th:href="${f['contenu']}" th:text="${f['nom']}">scan.pdf</a></li>
+  </ul>
+</body>
+</html>

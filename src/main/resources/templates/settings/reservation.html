@@ -1,0 +1,59 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'settings')}">
+<head><title th:text="#{settings.booking} + ' - MedSol'">Réservation en ligne - MedSol</title></head>
+<body>
+<!-- Paramètres › Réservation en ligne : page publique du cabinet où les patients demandent un rendez-vous -->
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1 th:text="#{nav.settings} + ' › ' + #{settings.booking}">Paramètres › Réservation en ligne</h1>
+      <p class="sous-titre" th:text="#{booking.subtitle}">Vos patients demandent un rendez-vous en ligne ; vous validez chaque demande.</p>
+    </div>
+  </header>
+  <div class="parametres">
+    <nav th:replace="~{settings/navigation :: navigation('reservation')}"></nav>
+    <div class="parametres-section">
+      <p class="alerte erreur" role="alert" th:if="${error}" th:text="#{${error}}"></p>
+      <p class="alerte succes" role="status" th:if="${done}" th:text="#{${done}}"></p>
+      <p class="alerte erreur" role="alert" th:if="${sansHoraires}">
+        <th:block th:text="#{booking.noHours}">Définissez d'abord les horaires du cabinet : les créneaux en découlent.</th:block>
+        <a th:href="@{/settings/horaires}" th:text="#{settings.hours} + ' ›'">Horaires ›</a></p>
+
+      <div class="grille-2">
+        <form class="carte formulaire" method="post" th:action="@{/settings/reservation}">
+          <label class="case"><input type="checkbox" name="active" value="true" th:checked="${r.active}">
+            <strong th:text="#{booking.active}">Activer la prise de rendez-vous en ligne</strong></label>
+          <label><th:block th:text="#{booking.link}">Adresse de votre page</th:block>
+            <span class="champ-prefixe"><span th:text="${#strings.substringBefore(adresse, '/r/') + '/r/'}">https://…/r/</span>
+              <input name="lien" required pattern="[a-z0-9][a-z0-9\-]{2,59}" maxlength="60" th:value="${lienPropose}"></span>
+            <small class="note" th:text="#{booking.link.help}">Lettres minuscules, chiffres et tirets.</small></label>
+          <div class="ligne-champs">
+            <label><th:block th:text="#{booking.duration}">Durée d'un créneau (min)</th:block>
+              <input type="number" name="duree" min="5" max="120" step="5" required th:value="${r.duree}"></label>
+            <label><th:block th:text="#{booking.delay}">Délai minimal (heures)</th:block>
+              <input type="number" name="delai" min="0" max="168" required th:value="${r.delai}"></label>
+            <label><th:block th:text="#{booking.horizon}">Ouvert sur (jours)</th:block>
+              <input type="number" name="horizon" min="1" max="180" required th:value="${r.horizon}"></label>
+          </div>
+          <label><th:block th:text="#{booking.message}">Message affiché aux patients (facultatif)</th:block>
+            <textarea name="message" rows="3" maxlength="500" th:placeholder="#{booking.message.example}" th:text="${r.message}"></textarea></label>
+          <button type="submit" class="bouton principal" th:text="#{save}">Enregistrer</button>
+        </form>
+
+        <div class="carte">
+          <h2 th:text="#{booking.yourPage}">Votre page</h2>
+          <th:block th:if="${qr != null}">
+            <p><a th:href="${adresse}" target="_blank" rel="noopener" th:text="${adresse}">lien</a></p>
+            <div class="qr-2fa" th:utext="${qr}"></div>
+            <p class="note" th:text="#{booking.share}">Partagez ce lien ou imprimez le QR code.</p>
+          </th:block>
+          <p class="vide" th:if="${qr == null}" th:text="#{booking.inactive}">La page n'est pas active.</p>
+          <p><a class="bouton" th:href="@{/planning/demandes}" th:text="#{booking.requests(${enAttente})}">Demandes en attente (0)</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::main}, 'plateforme')}">
+<head><title>Plateforme - MedSol</title></head>
+<body>
+<main id="main" class="contenu">
+  <header class="entete-page">
+    <div>
+      <h1>Plateforme MedSol</h1>
+      <p class="sous-titre">Cabinets, abonnements et tarifs. Aucune donnée médicale n'est accessible ici.</p>
+    </div>
+    <form class="navigation-semaine" method="get" th:action="@{/plateforme}">
+      <input type="search" name="q" th:value="${q}" placeholder="Cabinet ou e-mail…" aria-label="Rechercher un cabinet">
+      <button type="submit" class="bouton">Rechercher</button>
+    </form>
+  </header>
+  <p th:if="${succes}" class="alerte succes" th:text="${succes}" role="status">Succès</p>
+  <p th:if="${erreur}" class="alerte erreur" th:text="${erreur}" role="alert">Erreur</p>
+
+  <div class="compteurs">
+    <div class="carte compteur vert"><span class="compteur-valeur" th:text="${actifs}">0</span><span class="compteur-libelle">Abonnés</span></div>
+    <div class="carte compteur"><span class="compteur-valeur" th:text="${essais}">0</span><span class="compteur-libelle">En essai</span></div>
+    <div class="carte compteur accent"><span class="compteur-valeur" th:text="${echus}">0</span><span class="compteur-libelle">Échus (lecture seule)</span></div>
+    <div class="carte compteur violet"><span class="compteur-valeur" th:text="${#lists.size(cabinets)}">0</span><span class="compteur-libelle">Cabinets</span></div>
+  </div>
+
+  <div class="carte caisse-liste">
+    <p class="vide" th:if="${#lists.isEmpty(cabinets)}">Aucun cabinet.</p>
+    <details th:each="c : ${cabinets}" class="rdv">
+      <summary>
+        <span class="heure" th:text="${c.pays}">MA</span>
+        <span class="ligne-texte"><strong th:text="${c.nom}">Cabinet</strong>
+          <small th:text="${c.email} + ' · ' + ${c.specialite} + ' · ' + ${c.patients} + ' patients'
+                          + (${c.source} != null ? ' · connu par : ' + #{'src.' + ${c.source}} : '')
+                          + (${c.sourceDetail} != null ? ' (' + ${c.sourceDetail} + ')' : '')
+                          + (${c.parrain} != null ? ' · parrainé par ' + ${c.parrain} : '')">e-mail</small></span>
+        <span class="pastille vert" th:if="${c.fondateur}">Fondateur</span>
+        <span class="pastille" th:classappend="${c.echu() or c.statut == 'SUSPENDU'} ? 'urgent' : (${c.statut == 'ACTIF'} ? 'vert' : 'ambre')"
+              th:text="${c.statut} + ' · fin ' + ${#temporals.format(c.fin, 'dd/MM/yyyy')}">ESSAI</span>
+      </summary>
+      <div class="rdv-actions colonne-actions">
+        <form class="encaisser" th:action="@{/plateforme/cabinets/{id}/paiement(id=${c.id})}" method="post">
+          <select name="periode" aria-label="Période"><option value="MENSUEL">1 mois</option><option value="ANNUEL">1 an</option></select>
+          <label>Montant <input type="text" inputmode="decimal" name="montant" required></label>
+          <input type="text" name="devise" th:value="${c.devise}" maxlength="3" size="4" aria-label="Devise" required>
+          <input type="text" name="reference" maxlength="100" placeholder="Référence (virement, reçu…)" aria-label="Référence">
+          <button type="submit" class="bouton principal petit">Enregistrer le paiement</button>
+        </form>
+        <span class="boutons-entete">
+          <form th:if="${c.statut == 'ESSAI'}" th:action="@{/plateforme/cabinets/{id}/essai(id=${c.id})}" method="post">
+            <input type="hidden" name="jours" value="15"><button type="submit" class="bouton petit">Prolonger l'essai de 15 jours</button>
+          </form>
+          <form th:action="@{/plateforme/cabinets/{id}/suspension(id=${c.id})}" method="post">
+            <input type="hidden" name="suspendu" th:value="${c.statut != 'SUSPENDU'}">
+            <button type="submit" class="bouton petit" th:classappend="${c.statut != 'SUSPENDU'} ? 'danger'"
+                    th:text="${c.statut == 'SUSPENDU'} ? 'Réactiver' : 'Suspendre'">Suspendre</button>
+          </form>
+          <!-- Téléphone et codes de secours perdus : seulement après vérification de l'identité du médecin -->
+          <form th:action="@{/plateforme/cabinets/{id}/2fa(id=${c.id})}" method="post"
+                th:attr="data-confirm='Retirer la double authentification du médecin de ' + ${c.nom} + ' ? Faites-le uniquement après avoir vérifié son identité.'">
+            <button type="submit" class="bouton petit">Retirer la 2FA du médecin</button>
+          </form>
+        </span>
+      </div>
+    </details>
+  </div>
+
+  <div class="carte bandeau-fiche">
+    <div>
+      <h2>Fiche de présentation</h2>
+      <p class="sous-titre">Une page A4 à imprimer et laisser au cabinet après une visite : points forts, essai gratuit, tarif,
+        vos coordonnées (Éditeur ci-dessous) et un QR code vers l'inscription. Les inscriptions par ce QR code sont comptées
+        dans le canal « Visite ou démonstration ».</p>
+    </div>
+    <a class="bouton principal" th:href="@{/plateforme/fiche-presentation}" target="_blank">Ouvrir la fiche (PDF)</a>
+  </div>
+
+  <div class="carte">
+    <h2>Offre fondateur</h2>
+    <p class="sous-titre">Un prix en MAD garanti à vie pour les premiers cabinets inscrits pendant l'offre. Elle s'affiche sur la
+      page d'accueil, l'inscription et la fiche de présentation, avec le nombre de places restantes, puis se ferme toute seule.
+      <strong th:text="${fondateur.prises} + ' place(s) prise(s)' + (${fondateur.places > 0} ? ' sur ' + ${fondateur.places} : '')">0 place prise</strong>.</p>
+    <form class="ajout-antecedent" th:action="@{/plateforme/fondateur}" method="post">
+      <label class="case"><input type="checkbox" name="actif" value="true" th:checked="${fondateur.actif}"> Offre active</label>
+      <input type="text" name="mensuel" inputmode="decimal" placeholder="Mensuel (ex. 290)" aria-label="Prix fondateur mensuel"
+             th:value="${fondateur.mensuel != null} ? ${fondateur.mensuel.stripTrailingZeros().toPlainString()} : ''">
+      <input type="text" name="annuel" inputmode="decimal" placeholder="Annuel (ex. 2900)" aria-label="Prix fondateur annuel"
+             th:value="${fondateur.annuel != null} ? ${fondateur.annuel.stripTrailingZeros().toPlainString()} : ''">
+      <input type="number" name="places" min="0" max="10000" placeholder="Places (ex. 20)" aria-label="Nombre de places"
+             th:value="${fondateur.places > 0} ? ${fondateur.places} : ''">
+      <button type="submit" class="bouton petit principal">Enregistrer</button>
+    </form>
+  </div>
+
+  <div class="carte">
+    <h2>Comment les cabinets ont connu MedSol</h2>
+    <p class="sous-titre">Déclaré à l'inscription. « Clients » : cabinets qui ont payé au moins un abonnement.</p>
+    <p class="vide" th:if="${#lists.isEmpty(canaux)}">Aucune inscription pour le moment.</p>
+    <table class="tableau compact" th:unless="${#lists.isEmpty(canaux)}">
+      <thead><tr><th>Canal</th><th class="droite">Inscrits</th><th class="droite">Clients</th><th class="droite">Conversion</th></tr></thead>
+      <tbody>
+        <tr th:each="k : ${canaux}">
+          <td th:text="${k.source == 'NON_RENSEIGNE'} ? 'Non renseigné (avant la question)' : #{'src.' + ${k.source}}">Canal</td>
+          <td class="droite" th:text="${k.inscrits}">0</td>
+          <td class="droite" th:text="${k.clients}">0</td>
+          <td class="droite" th:text="${k.inscrits > 0} ? ${k.clients * 100 / k.inscrits} + ' %' : '—'">0 %</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="carte">
+    <h2>Éditeur de MedSol : factures d'abonnement et paiement</h2>
+    <p class="sous-titre">Vos mentions légales (imprimées sur les factures envoyées aux médecins) et vos instructions de
+      paiement (affichées sur la page Abonnement de chaque cabinet).</p>
+    <form class="formulaire" th:action="@{/plateforme/editeur}" method="post">
+      <label th:each="champ : ${champsEditeur}"><span th:text="${champ.value}">Champ</span>
+        <textarea th:if="${champ.key == 'instructions_paiement'}" th:name="${champ.key}" rows="5" maxlength="1500"
+                  placeholder="Virement à : Nom — Banque — RIB 000 000 0000000000000000 00&#10;Référence à indiquer : le nom de votre cabinet&#10;Envoyez la preuve par WhatsApp au 06…"
+                  th:text="${editeur.get(champ.key)}"></textarea>
+        <input th:unless="${champ.key == 'instructions_paiement'}" type="text" th:name="${champ.key}" maxlength="200"
+               th:value="${editeur.get(champ.key)}">
+      </label>
+      <button type="submit" class="bouton principal">Enregistrer</button>
+    </form>
+  </div>
+
+  <div class="carte">
+    <h2>Tarifs de la formule (par devise)</h2>
+    <p class="sous-titre">Modifiez un prix puis cliquez sur « Enregistrer » sur sa ligne. Le tarif en <strong>MAD</strong> est
+      celui affiché sur la page d'accueil, la fiche de présentation et la page Abonnement des cabinets marocains. Un nouveau
+      tarif s'applique aux prochains paiements ; ceux déjà enregistrés ne changent pas.</p>
+    <table class="tableau compact tableau-tarifs">
+      <thead><tr><th>Devise</th><th class="droite">Mensuel</th><th class="droite">Annuel</th><th class="droite">Remise annuelle</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="t : ${tarifs}">
+          <td><strong th:text="${t.devise}">MAD</strong></td>
+          <td class="droite"><input type="text" inputmode="decimal" name="mensuel" required th:value="${t.mensuel.stripTrailingZeros().toPlainString()}"
+                                    th:attr="form='tarif-' + ${t.devise},aria-label='Prix mensuel ' + ${t.devise}"></td>
+          <td class="droite"><input type="text" inputmode="decimal" name="annuel" required th:value="${t.annuel.stripTrailingZeros().toPlainString()}"
+                                    th:attr="form='tarif-' + ${t.devise},aria-label='Prix annuel ' + ${t.devise}"></td>
+          <td class="droite note" th:text="${t.moisOfferts() != null} ? ${t.moisOfferts()} + ' mois offerts' : '—'">2 mois offerts</td>
+          <td class="droite">
+            <form th:id="'tarif-' + ${t.devise}" th:action="@{/plateforme/tarifs}" method="post">
+              <input type="hidden" name="formule" th:value="${t.formule}"><input type="hidden" name="devise" th:value="${t.devise}">
+              <button type="submit" class="bouton petit principal">Enregistrer</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <details class="ajout-devise">
+      <summary>Ajouter une devise</summary>
+      <form class="ajout-antecedent" th:action="@{/plateforme/tarifs}" method="post">
+        <input type="hidden" name="formule" value="CABINET">
+        <input type="text" name="devise" maxlength="3" placeholder="Devise (ex. CAD)" aria-label="Devise" required>
+        <input type="text" name="mensuel" inputmode="decimal" placeholder="Mensuel" aria-label="Prix mensuel" required>
+        <input type="text" name="annuel" inputmode="decimal" placeholder="Annuel" aria-label="Prix annuel" required>
+        <button type="submit" class="bouton petit principal">Ajouter</button>
+      </form>
+    </details>
+  </div>
+</main>
+</body>
+</html>
