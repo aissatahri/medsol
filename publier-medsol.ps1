@@ -1,14 +1,16 @@
-﻿# Publication de MedSol sur le serveur appsol (Hetzner), sans Docker, à côté de SGCM-Cardio Web :
-#   powershell -ExecutionPolicy Bypass -File .\publier-medsol.ps1
+﻿# Publication de MedSol sur un serveur Hetzner, sans Docker :
+#   powershell -ExecutionPolicy Bypass -File .\publier-medsol.ps1 -Serveur <adresse> -Domaine <nom>
 # Production (serveur dédié) : .\publier-production.ps1, qui appelle ce script avec -Mode production.
+# Le serveur de test medsol.appsol.app (sur appsol-1, le serveur du cabinet SGCM-Cardio) a été retiré le 27/11/2026 :
+# serveur et domaine ne sont plus donnés par défaut, et appsol-1 est refusé (il ne doit plus héberger MedSol).
 # Étapes : construction (avec les tests), envoi, installation ou mise à jour (deploiement/serveur/installer.sh),
 # vérification en ligne. La première fois, l'installation ajoute PostgreSQL, le service, le site dans Caddy et les
 # sauvegardes ; ensuite, seule l'application est remplacée.
 param(
-    [string]$Serveur = '167.233.96.197',
+    [string]$Serveur = '',
     [string]$Utilisateur = 'aissa',
     [string]$Cle = (Join-Path $env:USERPROFILE '.ssh\id_ed25519_medsol'),
-    [string]$Domaine = 'medsol.appsol.app',
+    [string]$Domaine = '',
     [int]$Port = 8081,
     [ValidateSet('test', 'production')] [string]$Mode = 'test',
     [string]$Admin = '',
@@ -17,6 +19,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $racine = $PSScriptRoot
 function Etape($texte) { Write-Host ''; Write-Host "== $texte" -ForegroundColor Cyan }
+if (-not $Serveur -or -not $Domaine) { throw 'Indiquez -Serveur et -Domaine (production : publier-production.ps1).' }
+if ($Serveur -eq '167.233.96.197' -or $Domaine -eq 'medsol.appsol.app') {
+    throw 'Refusé : 167.233.96.197 (appsol-1) est le serveur du cabinet SGCM-Cardio ; MedSol n''y est plus installé.'
+}
 if ($Mode -eq 'production' -and $Admin -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') { throw 'Production : indiquez l''e-mail de l''administrateur (-Admin).' }
 if ($Mode -eq 'production' -and $SansTests) { throw 'Production : les tests sont obligatoires (retirez -SansTests).' }
 if (-not (Test-Path $Cle)) { throw "Clé SSH introuvable : $Cle (paramètre -Cle)." }

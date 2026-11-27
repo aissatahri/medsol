@@ -1,6 +1,6 @@
 ﻿# Publication de MedSol sur le serveur de PRODUCTION (serveur Hetzner dédié, vrais cabinets) :
 #   powershell -ExecutionPolicy Bypass -File .\publier-production.ps1
-# Toujours après avoir essayé la version sur le serveur de test (publier-medsol.ps1).
+# Toujours après avoir essayé la version en local (le serveur de test medsol.appsol.app a été retiré le 27/11/2026).
 # La première fois : installe Java, PostgreSQL, Caddy (HTTPS), le pare-feu, les mises à jour de sécurité et les
 # sauvegardes ; sans cabinets de démonstration, double authentification obligatoire pour les médecins.
 # Les fois suivantes : sauvegarde de la base, puis remplacement de l'application. Les tests sont obligatoires.

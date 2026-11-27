@@ -4,12 +4,13 @@
 # /etc/medsol.env ; ils n'apparaissent ni à l'écran ni dans l'historique. Les anciennes lignes MEDSOL_MAIL_*
 # (y compris celles mal tapées « MEDSOL-MAIL-… ») sont remplacées, puis MedSol redémarre.
 param(
-    [string]$Serveur = '167.233.96.197',
-    [string]$Utilisateur = 'aissa',
+    [string]$Serveur = '159.69.253.97',     # medsol-production (le serveur de test sur appsol-1 a été retiré)
+    [string]$Utilisateur = 'root',
     [string]$Cle = (Join-Path $env:USERPROFILE '.ssh\id_ed25519_medsol'),
     [string]$Expediteur = 'MedSol <no-reply@appsol.app>'
 )
 $ErrorActionPreference = 'Stop'
+if ($Serveur -eq '167.233.96.197') { throw 'Refusé : 167.233.96.197 (appsol-1) est le serveur du cabinet SGCM-Cardio ; MedSol n''y est plus installé.' }
 
 $identifiant = (Read-Host 'Identifiant SMTP Brevo (ex. xxxxxxx@smtp-brevo.com)').Trim()
 if ($identifiant -notmatch '^[^@\s]+@[^@\s]+$') { throw "Identifiant invalide : il doit contenir @ (page SMTP et API de Brevo)." }
